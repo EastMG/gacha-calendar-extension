@@ -40,6 +40,13 @@ node build.mjs --zip # 额外打出 release/*.zip（用于提交商店）
 > `npm pack gacha-calendar-core @esbuild/win32-x64` 然后 `tar -xzf` 到 `node_modules/` 对应目录。
 > `build.mjs` 会直接定位平台预编译二进制，不强依赖 npm 的 `.bin` 垫片。
 
+> **提交前先跑 `node verify.mjs && node verify-live.mjs`。** 仓库带了
+> `.githooks/pre-commit`（BOM 检查 + 构建 + 静态校验），启用方式：
+> `git config core.hooksPath .githooks`。单次跳过用 `DSH_SKIP_VERIFY=1 git commit ...`。
+>
+> Windows 上若 `git push` 报 `error setting certificate verify locations`，是 CA 路径没配：
+> `git config http.sslCAInfo "D:/Program Files/Git/mingw64/ssl/certs/ca-bundle.crt"`（按本机实际路径改）。
+
 ### 为什么必须构建
 
 MV3 **禁止远程代码**（不能从 CDN 取代码），所以 `gacha-calendar-core` 必须内联进扩展自己的 js。
@@ -60,6 +67,7 @@ build.mjs              构建（内联 core + 校验清单）
 verify.mjs             静态校验（27 项）
 verify-live.mjs        端到端校验（真网络抓 11 款 + 渲染模型 + 域名覆盖）
 make-icons.mjs         生成图标（Node 内置 zlib 手写 PNG，字节可复现）
+.githooks/pre-commit   提交守卫：BOM 检查 + build + verify
 ```
 
 ## 设计要点（改动前请先读）
