@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "二游排期",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "11 款二次元手游的当期卡池与活动起止一览：原神/星铁/绝区零/鸣潮/明日方舟/终末地/蔚蓝档案三服/重返未来1999/异环。",
   "icons": {
     "16": "icons/icon-16.png",

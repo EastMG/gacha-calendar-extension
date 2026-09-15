@@ -1,6 +1,6 @@
 {
   "name": "gacha-calendar-extension",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "二游活动/卡池排期速查浏览器扩展（Chrome/Edge MV3）：11 款游戏的当期卡池与活动起止。",
   "type": "module",
