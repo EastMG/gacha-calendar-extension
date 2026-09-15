@@ -50,44 +50,48 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** 从 LevelDB blob 里截出自检报告对象（不关心是哪个扩展 ID 的存储）。 */
 function extractReport(blobs) {
 	for (const buf of blobs) {
-		for (const enc of ["utf8", "utf16le"]) {
+		for (const enc of ["utf8", "utf16le", "latin1"]) {
 			const text = buf.toString(enc);
-			let idx = text.indexOf('"where":"service_worker"');
-			if (idx < 0) idx = text.indexOf('\\"where\\":\\"service_worker\\"');
-			if (idx < 0) continue;
-			const start = text.lastIndexOf("{", idx);
-			if (start < 0) continue;
-			// 括号配对截出完整 JSON（跳过字符串内的括号）
-			let depth = 0, end = -1, inStr = false, esc = false;
-			for (let i = start; i < text.length; i++) {
-				const ch = text[i];
-				if (inStr) {
-					if (esc) esc = false;
-					else if (ch === "\\") esc = true;
-					else if (ch === '"') inStr = false;
-					continue;
-				}
-				if (ch === '"') inStr = true;
-				else if (ch === "{") depth++;
-				else if (ch === "}") {
-					depth--;
-					if (depth === 0) {
-						end = i + 1;
-						break;
+			// 值可能是 JSON 原文，也可能是被转义的形态
+			for (const marker of ['"where":"service_worker"', '\\"where\\":\\"service_worker\\"', "where.*service_worker"]) {
+				const idx = text.search(marker.startsWith("where.") ? /where[^\w]{1,8}service_worker/ : new RegExp(escapeRe(marker)));
+				if (idx < 0) continue;
+				const start = text.lastIndexOf("{", idx);
+				if (start < 0) continue;
+				// 括号配对截出完整 JSON（跳过字符串内的括号）
+				let depth = 0, end = -1, inStr = false, esc = false;
+				for (let i = start; i < text.length; i++) {
+					const ch = text[i];
+					if (inStr) {
+						if (esc) esc = false;
+						else if (ch === "\\") esc = true;
+						else if (ch === '"') inStr = false;
+						continue;
+					}
+					if (ch === '"') inStr = true;
+					else if (ch === "{") depth++;
+					else if (ch === "}") {
+						depth--;
+						if (depth === 0) {
+							end = i + 1;
+							break;
+						}
 					}
 				}
-			}
-			if (end < 0) continue;
-			const raw = text.slice(start, end);
-			for (const candidate of [raw, raw.replace(/\\"/g, '"').replace(/\\\\/g, "\\")]) {
-				try {
-					return { report: JSON.parse(candidate), encoding: enc };
-				} catch {}
+				if (end < 0) continue;
+				const raw = text.slice(start, end);
+				for (const candidate of [raw, raw.replace(/\\"/g, '"').replace(/\\\\/g, "\\")]) {
+					try {
+						return { report: JSON.parse(candidate), encoding: enc };
+					} catch {}
+				}
 			}
 		}
 	}
 	return null;
 }
+
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** 扫 profile 里所有扩展存储的 LevelDB，找出自检报告。 */
 function readReport(profileDir) {
@@ -171,13 +175,16 @@ async function main() {
 	}
 	if (!ownId) check("扩展加载并在浏览器中打开 popup 页面", false, "没找到本项目的扩展页");
 
-	// 轮询：在**浏览器运行中**直接读 profile（LevelDB 的 .log 是追加写的，运行时就能读到），
-	// 读到报告再关浏览器。这样避免"杀太快导致未落盘"。
+	// 轮询：**必须等到报告本身可读**再关浏览器。
+	// 曾经的坑：一看到 storage 目录出现就 break 并 kill，结果 service worker 的写入
+	// 还没被 LevelDB 刷到磁盘文件里，报告读不出来。
 	const deadline = Date.now() + 180000;
 	let got = null;
 	let grew = false;
+	let ticks = 0;
 	while (Date.now() < deadline) {
 		await sleep(4000);
+		ticks++;
 		const base = path.join(PROFILE, "Default", "Local Extension Settings");
 		if (!fs.existsSync(base)) continue;
 		const ids = fs.readdirSync(base);
@@ -189,18 +196,25 @@ async function main() {
 				return acc;
 			}
 		}, 0);
-		say(`    存储: ${ids.join(",") || "（无）"} → ${n} 个文件${mine ? "（含本项目扩展）" : ""}`);
 		if (mine && n > 0) grew = true;
 		const probe = readReport(PROFILE);
+		// 每 5 次（约 20s）打一行，避免刷屏
+		if (ticks % 5 === 1 || probe.report) {
+			say(`    ${ticks * 4}s: 存储 ${n} 个文件${mine ? "（含本项目扩展）" : ""}${probe.report ? "，已读到报告 ✓" : ""}`);
+		}
 		if (probe.report) {
 			got = probe;
-			say("    已读到自检报告 ✓");
 			break;
 		}
 	}
 
+	// 关浏览器前再等一会，给 LevelDB 落盘（运行中已读到则不必）
+	if (!got) {
+		say("  运行中未读到报告，关闭前多留 12s 等落盘…");
+		await sleep(12000);
+	}
 	try { child.kill(); } catch {}
-	await sleep(3000);
+	await sleep(4000);
 	fs.closeSync(outFd);
 	check("service worker 执行并写出 storage", grew);
 
