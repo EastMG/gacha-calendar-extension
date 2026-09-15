@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<title>二游排期</title>
+		<link rel="stylesheet" href="popup.css" />
+	</head>
+	<body>
+		<header class="hd">
+			<div class="hd-line">
+				<h1 class="title">二游排期</h1>
+				<button id="refresh" class="icon-btn" type="button" title="刷新" aria-label="刷新">
+					<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M21 12a9 9 0 1 1-2.64-6.36L21 8" />
+						<polyline points="21 3 21 8 16 8" />
+					</svg>
+				</button>
+				<button id="settings" class="icon-btn" type="button" title="设置" aria-label="设置">
+					<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<circle cx="12" cy="12" r="3" />
+						<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+					</svg>
+				</button>
+			</div>
+			<div class="meta">
+				<span id="status">载入中…</span>
+				<span id="scrape" class="scrape" hidden></span>
+			</div>
+		</header>
+
+		<main id="list" class="list" aria-live="polite">
+			<p class="empty">正在读取数据…</p>
+		</main>
+
+		<footer class="ft">
+			<span id="refreshed">—</span>
+			<span class="ft-hint">悬停查看池名与时间明细</span>
+		</footer>
+
+		<script type="module" src="popup.js"></script>
+	</body>
+</html>

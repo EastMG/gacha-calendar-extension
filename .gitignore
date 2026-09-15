@@ -1,0 +1,16 @@
+# 构建产物与依赖
+node_modules/
+dist/
+release/
+
+# 验证/调试残留（脚本运行时会生成这些）
+_browser-profile/
+_browser-report.json
+_verify-ext/
+_*.txt
+_*.json
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+*.log

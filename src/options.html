@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<title>二游排期 · 设置</title>
+		<link rel="stylesheet" href="options.css" />
+	</head>
+	<body>
+		<div class="wrap">
+			<header class="hd">
+				<h1>二游排期 · 设置</h1>
+				<p class="sub">
+					共 <span id="count">–</span> 个条目。抓取由
+					<a id="core-link" href="https://www.npmjs.com/package/gacha-calendar-core" target="_blank" rel="noreferrer">gacha-calendar-core</a>
+					完成，本页只保存你的偏好。
+				</p>
+			</header>
+
+			<section class="card">
+				<h2>刷新</h2>
+				<div class="row">
+					<label class="lbl" for="autoRefresh">自动刷新</label>
+					<input id="autoRefresh" type="checkbox" />
+					<span class="hint">关闭后只在手动点「刷新」时联网。</span>
+				</div>
+				<div class="row">
+					<label class="lbl" for="refreshMinutes">刷新频率</label>
+					<select id="refreshMinutes"></select>
+					<span class="hint">打开扩展时若已超过该间隔，会自动抓一轮。</span>
+				</div>
+			</section>
+
+			<section class="card">
+				<h2>条目</h2>
+				<p class="hint block">「展示」控制是否出现在面板里；「↑↓」调整顺序；卡池来源与活动来源可各自独立选择。</p>
+				<div class="grid-head">
+					<span>游戏</span><span>展示</span><span>卡池来源</span><span>活动来源</span><span>操作</span>
+				</div>
+				<div id="entries"></div>
+				<div class="row end">
+					<button id="resetOrder" class="btn" type="button">恢复默认顺序</button>
+				</div>
+			</section>
+
+			<section class="card">
+				<h2>解析器自检</h2>
+				<p class="hint block">
+					对每个来源各跑一次，报告「解析出 0 条 / 抓取报错」。用于源站改版时快速定位问题。
+					<strong>只读</strong>：不改缓存、不动设置。
+				</p>
+				<div class="row">
+					<button id="selfCheck" class="btn primary" type="button">开始自检</button>
+					<span id="sc-summary" class="hint"></span>
+				</div>
+				<ul id="sc-list" class="sc-list"></ul>
+			</section>
+
+			<section class="card">
+				<h2>关于</h2>
+				<p class="hint block">
+					数据来源：各游戏官方公告与社区 Wiki（Bwiki / PRTS / FZ Wiki / GameKee 等）。
+					抓取失败时该列会沿用上次成功的数据，并在面板上标出。<br />
+					本扩展不收集任何个人数据；所有请求由你的浏览器直接发往上述来源站。
+				</p>
+				<div class="row">
+					<span class="hint">版本 <span id="ver">–</span> · 抓取核心 <span id="core-ver">–</span></span>
+				</div>
+			</section>
+		</div>
+		<script type="module" src="options.js"></script>
+	</body>
+</html>

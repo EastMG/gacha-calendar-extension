@@ -1,0 +1,49 @@
+#!/bin/sh
+# gacha-calendar-extension pre-commit hook
+#
+# WHY: 这个扩展有两个"静默失败"来源，都靠这里拦住：
+#   1) `manifest.json` 与 `package.json` 版本号不一致 → 发出去的包版本对不上
+#   2) 改了源码却忘了 build → dist/ 与源码不一致（而 dist/ 不入库，很难察觉）
+#   3) 权限/白名单漏配域名 → 某个来源在浏览器里静默抓不到（最隐蔽）
+#
+# Activation（每个 clone 一次）：
+#   git config core.hooksPath .githooks
+# 单次跳过：
+#   DSH_SKIP_VERIFY=1 git commit ...
+
+skip=${DSH_SKIP_VERIFY:-}
+fail=0
+
+# ---- BOM 守卫：DSH/浏览器读 JSON 都不吃 BOM，历史上有过事故 ----
+for f in $(git diff --cached --name-only --diff-filter=ACM); do
+	case "$f" in
+		*.json|*.js|*.mjs|*.html|*.css|*.md|*.yml|*.yaml) ;;
+		*) continue ;;
+	esac
+	[ -f "$f" ] || continue
+	if [ "$(head -c 3 -- "$f" | od -An -tx1 | tr -d ' \n')" = "efbbbf" ]; then
+		echo "ERROR: UTF-8 BOM detected in staged file: $f" >&2
+		echo "  浏览器解析 manifest.json 不接受 BOM。Commit blocked." >&2
+		fail=1
+	fi
+done
+
+# ---- 构建与校验守卫 ----
+if [ -z "$skip" ]; then
+	if command -v node >/dev/null 2>&1; then
+		if ! node build.mjs >/dev/null 2>&1; then
+			echo "ERROR: node build.mjs 失败 —— 构建不过不要提交。Commit blocked." >&2
+			echo "  Fix: node build.mjs            # 看完整报错" >&2
+			fail=1
+		fi
+		if ! node verify.mjs >/dev/null 2>&1; then
+			echo "ERROR: node verify.mjs 未通过（manifest/权限/零远程代码等静态校验）。Commit blocked." >&2
+			echo "  Fix: node verify.mjs           # 看是哪一项" >&2
+			fail=1
+		fi
+	else
+		echo "WARN: 未找到 node，跳过构建与校验" >&2
+	fi
+fi
+
+exit $fail

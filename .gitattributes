@@ -1,0 +1,30 @@
+# 换行与文本规范
+#
+# WHY: 这个仓库里有两类文件对换行敏感：
+#   1) .githooks/* 是 shell 脚本 —— 被转成 CRLF 后 sh 会直接报错（"bad interpreter"），
+#      钩子静默失效，最危险
+#   2) 扩展源码/清单由 Node 与浏览器读取，统一 LF 可避免"本地能跑、CI 挂了"
+#
+# 默认：文本文件按 LF 存储（不做 CRLF 转换）
+* text=auto eol=lf
+
+# shell 脚本必须 LF
+*.sh text eol=lf
+.githooks/* text eol=lf
+
+# 源码与清单
+*.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+
+# 二进制：不要做任何换行/编码处理
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.zip binary
