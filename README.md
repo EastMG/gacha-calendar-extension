@@ -63,6 +63,8 @@ src/storage.js         core 需要的 storage：chrome.storage.local 封装
 src/view-helpers.js    展示层纯函数（倒计时/角色名精简/悬停文案/行渲染模型）
 src/popup.*            面板
 src/options.*          设置页
+src/verify-boot.js     启动自检（仅 `--verify` 构建时打进 background.js，正常构建不含）
+tools/verify-chromium.mjs  Chromium 运行时验证（需在普通桌面环境跑）
 build.mjs              构建（内联 core + 校验清单）
 verify.mjs             静态校验（27 项）
 verify-live.mjs        端到端校验（真网络抓 11 款 + 渲染模型 + 域名覆盖）
@@ -114,24 +116,28 @@ transport = {
 | 验证 | 结果 |
 |---|---|
 | 静态校验（manifest 合法性、零远程代码、权限最小化、图标尺寸、版本一致性） | **27/27 通过** |
-| 端到端：真网络抓 11 款（与扩展同一份 transport 契约、同一份 core） | **通过**（bwiki 限流时 7/11，非 bwiki 源全通） |
+| 端到端：真网络抓 11 款（与扩展同一份 transport 契约、同一份 core） | **通过** |
 | 端到端：渲染模型（与 popup 同一份纯函数）逐项断言 | **通过** |
 | 端到端：域名覆盖（manifest / 白名单 / 产物三方对齐） | **通过** |
-| **浏览器里点开 popup 的像素渲染** | ⚠️ **需人工确认一次**（见下） |
+| **Chromium 里加载并实抓** | ⚠️ **请在普通桌面环境跑 `node tools/verify-chromium.mjs` 确认** |
 
-### 为什么浏览器自动化没跑成
+### 为什么"浏览器里跑"这一步没能在某些环境自动完成
 
-开发环境是受限沙箱，实测：
+在**带文件沙箱的受限环境**（例如某些自动化沙箱）里，Chromium 系的浏览器**根本无法正常执行扩展代码**。
+已实测并定位到根因（不是扩展缺陷）：
 
-- 沙箱内启动的 Chrome **profile 目录写不进去**（`profile/Default` 为空，连
-  `Local Extension Settings` 都没建出来）→ `chrome.storage` 落盘、扩展页执行、
-  localhost 回传三条通路全部不可用
-- Node 内置 WebSocket 与 Chrome DevTools 协议层不通（能握手，但
-  `Runtime.enable` / `Runtime.evaluate` 一个响应都收不到，对普通网页与扩展页都一样）
+- 浏览器日志持续报 `Failed to grant sandbox access to ... 拒绝访问 (0x5)` ——
+  宿主文件沙箱挡住了浏览器子进程访问自己的 profile 目录
+- **连"最小扩展"都不执行**：用 3 个文件（manifest + service worker，零依赖、零打包）
+  做对照实验，service worker 里连一行 `console.log` 都没有输出，`chrome.storage` 也没有任何落盘
+- 同一环境下 Node 内置 WebSocket 与 Chrome DevTools 协议层不通（能握手、命令零响应）
+- headless 模式直接崩溃（`crash server failed to launch, self-terminating`）
 
-这三条都是**环境限制，与扩转代码无关**。所以最后一步留给人工，30 秒即可完成：
+结论：**这属于环境限制**。`tools/verify-chromium.mjs` 就是在普通桌面环境里补这一步的脚本：
+它把"启动自检"打进 `background.js`，让 service worker 自己跑完 11 款实抓与通道检查，
+把报告写进 `chrome.storage.local`，再从 profile 的 LevelDB 里读回来断言 —— 全程不需要 CDP。
 
-### 人工确认清单
+### 人工确认清单（30 秒）
 
 在 `edge://extensions` 加载 `dist/` 后：
 

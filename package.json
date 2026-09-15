@@ -7,6 +7,9 @@
   "scripts": {
     "build": "node build.mjs",
     "verify": "node verify.mjs",
+    "verify:live": "node verify-live.mjs",
+    "verify:chromium": "node tools/verify-chromium.mjs",
+    "icons": "node make-icons.mjs",
     "zip": "node build.mjs --zip"
   },
   "dependencies": {

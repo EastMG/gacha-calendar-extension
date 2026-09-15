@@ -14,3 +14,8 @@ _*.json
 .DS_Store
 Thumbs.db
 *.log
+
+# Chromium 验证脚本产生
+_chromium-profile/
+_chromium-*.txt
+_hprof*
