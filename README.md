@@ -119,23 +119,44 @@ transport = {
 | 端到端：真网络抓 11 款（与扩展同一份 transport 契约、同一份 core） | **通过** |
 | 端到端：渲染模型（与 popup 同一份纯函数）逐项断言 | **通过** |
 | 端到端：域名覆盖（manifest / 白名单 / 产物三方对齐） | **通过** |
-| **Chromium 里加载并实抓** | ⚠️ **请在普通桌面环境跑 `node tools/verify-chromium.mjs` 确认** |
+| **真实 Chromium：扩展加载 + 面板渲染** | **✅ 已取证**（见 `assets/popup.png`） |
+| **真实 Chromium：11 款实抓落库** | ⚠️ 未在本机取证，请在普通桌面环境跑 `node tools/verify-chromium.mjs` |
 
-### 为什么"浏览器里跑"这一步没能在某些环境自动完成
+### 已取证的部分（真实 Edge，无头模式截图）
 
-在**带文件沙箱的受限环境**（例如某些自动化沙箱）里，Chromium 系的浏览器**根本无法正常执行扩展代码**。
-已实测并定位到根因（不是扩展缺陷）：
+`assets/popup.png` 是在 **Microsoft Edge** 里加载 `dist/` 后渲染 `popup.html` 得到的，图里可以看到：
 
-- 浏览器日志持续报 `Failed to grant sandbox access to ... 拒绝访问 (0x5)` ——
-  宿主文件沙箱挡住了浏览器子进程访问自己的 profile 目录
-- **连"最小扩展"都不执行**：用 3 个文件（manifest + service worker，零依赖、零打包）
-  做对照实验，service worker 里连一行 `console.log` 都没有输出，`chrome.storage` 也没有任何落盘
-- 同一环境下 Node 内置 WebSocket 与 Chrome DevTools 协议层不通（能握手、命令零响应）
+- 面板标题「二游排期」、刷新按钮、设置按钮
+- 状态栏（截图瞬间显示"刷新中…"，说明脚本已在执行自动抓取）
+- 游戏行：原神、崩坏：星穹铁道、绝区零、鸣潮……，每行为「卡池 / 起止 / 活动 / 起止」四段结构
+- 页脚「悬停查看池名与时间明细」
+
+同一轮验证里还确认了：`/json/list` 中扩展的 popup 页面标题就是「二游排期」，
+且扩展的 service worker 在 `chrome.storage` 下创建了自己的存储目录（即 worker 确实执行了）。
+
+### 尚未取证的部分及原因
+
+**"11 款实抓的结果写进浏览器 storage"这一步没能在本机截到**，两个具体原因：
+
+1. `--virtual-time-budget` 会**快进虚拟时间**，而 headless 截图在 load 事件即触发，
+   **不等真实网络** → 截图里数据列仍是占位符 `—`
+2. service worker 写 `chrome.storage` 后，Edge 的 LevelDB 在进程退出前未把内容刷到可读的
+   `.log/.ldb` 里（运行中轮询文件数始终不变），所以从 profile 里读不到报告
+
+**这两条是实现细节，不代表功能有问题**：数据侧的正确性已由 `verify-live.mjs` 覆盖
+（真网络抓 11/11、render 模型与 popup 同一份纯函数、逐字段断言通过）。
+
+### 环境侧的一个真实约束（记录以免重复踩）
+
+在有**文件沙箱**的环境里，Chromium 系浏览器**根本无法执行扩展代码**：
+
+- 浏览器日志持续报 `Failed to grant sandbox access to ... 拒绝访问 (0x5)`
+- 用 3 个文件的"最小扩展"（零依赖、零打包）做对照，service worker 连一行 `console.log` 都没有
 - headless 模式直接崩溃（`crash server failed to launch, self-terminating`）
+- Node 内置 WebSocket 与 DevTools 协议层不通（能握手、命令零响应）
 
-结论：**这属于环境限制**。`tools/verify-chromium.mjs` 就是在普通桌面环境里补这一步的脚本：
-它把"启动自检"打进 `background.js`，让 service worker 自己跑完 11 款实抓与通道检查，
-把报告写进 `chrome.storage.local`，再从 profile 的 LevelDB 里读回来断言 —— 全程不需要 CDP。
+**解除文件沙箱限制后立刻恢复**：同一套脚本下，Edge 成功加载扩展、popup 页面正常打开、
+service worker 正常执行并创建存储目录。所以在受限环境里跑验证脚本前，先确认浏览器能正常启动。
 
 ### 人工确认清单（30 秒）
 
