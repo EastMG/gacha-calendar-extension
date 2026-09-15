@@ -6,17 +6,16 @@
 > 蔚蓝档案（国服 · 国际服 · 日服）/ 重返未来：1999 / 异环
 
 抓取逻辑来自独立包 **[`gacha-calendar-core`](https://www.npmjs.com/package/gacha-calendar-core)**
-（与本项目同源的 [DSH 桌面端插件](https://github.com/EastMG/dsh-gacha-calendar) 共用同一份核心）：
-源站改版只需修一处，各平台一起受益。
+与 [DSH 桌面端插件](https://github.com/EastMG/dsh-gacha-calendar) 共用同一份核心
 
 ---
 
 ## 安装（加载已解压的扩展程序）
 
-1. 构建：`node build.mjs`（或直接下载 Release 里的 zip 解压）
-2. 打开 `edge://extensions`（Chrome 是 `chrome://extensions`）
+1. 构建：`node build.mjs`（或直接下载 Release 里的 `.zip` 解压）
+2. 打开 `edge://extensions` 或 `chrome://extensions`
 3. 打开右下角/右上角的 **开发人员模式**
-4. 点 **加载解压缩的扩展**，选择本项目的 `dist/` 目录（或解压后的目录）
+4. 点 **加载解压缩的扩展**，选择本项目的 `dist/` 目录（或Release `.zip` 解压后的目录）
 5. 点工具栏的「二游排期」图标 → 首次打开会自动抓一轮
 
 ## 使用
