@@ -8,6 +8,10 @@
 抓取逻辑来自独立包 **[`gacha-calendar-core`](https://www.npmjs.com/package/gacha-calendar-core)**
 与 [DSH 桌面端插件](https://github.com/EastMG/dsh-gacha-calendar) 共用同一份核心
 
+> **当前内联的核心版本：`gacha-calendar-core@0.9.12`**（构建时会打印实际版本，设置页也能看到）。
+> 升级核心只需改 `package.json` 的依赖版本并重新 `node build.mjs`。
+> 注意：核心仓库的版本可能领先于 npm（未发布的修复拿不到），跟随 npm 上的最新版即可。
+
 ---
 
 ## 安装（加载已解压的扩展程序）
