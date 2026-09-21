@@ -28,6 +28,8 @@ const ALLOW_HOSTS = [
 	"bluearchive.jp",
 	"zzz.mihoyo.com",
 	"re.bluepoch.com",
+	"notice.sl916.com",
+	"www.sl916.com",
 	"game.xiaomi.com",
 	"forum.nexon.com",
 	// 社区 Wiki / 数据站
