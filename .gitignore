@@ -19,3 +19,6 @@ Thumbs.db
 _chromium-profile/
 _chromium-*.txt
 _hprof*
+
+# 临时脚本（下划线前缀，如 _test-*.mjs）
+_*.mjs
