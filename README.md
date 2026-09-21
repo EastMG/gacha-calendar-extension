@@ -27,7 +27,17 @@
 - **卡池 / 活动**：外显角色名与活动名；**鼠标悬停**可看完整池名、UP 角色与时间原文
 - **起止**：显示"还剩 X 天 X 小时 X 分钟"的倒计时
 - **右上角按钮**：刷新 / 打开设置页
-- **设置页**：展示开关、条目排序、卡池与活动来源各自切换、刷新频率、**解析器自检**
+- **设置页**：展示开关、条目排序与删除、卡池与活动来源各自切换（含自定义地址）、
+  刷新频率、**解析器自检**
+
+### 设置页的能力边界
+
+- **自定义来源地址**：可在每条目内联填写，但**必须落在扩展已声明的主机列表内**
+  （浏览器扩展的 `host_permissions` 是构建期静态声明的，运行期无法添加）。
+  输入框自带候选主机提示；超范围填写不会被抓取，且无错误提示。
+- **不提供新增"自定义条目"**：原因同上——自定义条目几乎必然指向未声明域名，
+  做出来只会"填了却抓不到"。
+- **删除条目**：内置条目记入 `removed`，可在「已删除的条目」区单独或一次性恢复。
 
 ## 构建
 
@@ -68,6 +78,8 @@ src/popup.*            面板
 src/options.*          设置页
 src/verify-boot.js     启动自检（仅 `--verify` 构建时打进 background.js，正常构建不含）
 tools/verify-chromium.mjs  Chromium 运行时验证（需在普通桌面环境跑）
+tools/check-domains.mjs    来源域名守卫（已并入 verify.mjs，每次提交自动跑）
+tools/test-domain-guard.mjs / tools/test-options.mjs  两个自测（见「测试」一节）
 build.mjs              构建（内联 core + 校验清单）
 verify.mjs             静态校验（27 项）
 verify-live.mjs        端到端校验（真网络抓 11 款 + 渲染模型 + 域名覆盖）
@@ -123,6 +135,19 @@ transport = {
 npm run verify:domains     # 只看域名覆盖
 npm run test:domains       # 测守卫自身：该失败时失败、该通过时通过
 ```
+
+### 测试
+
+```bash
+npm test                   # 跑下面两个自测
+npm run test:domains       # 域名守卫的通过与拒绝路径（在沙箱副本里用"冒牌 core"）
+npm run test:options       # 设置页行为（用极简 DOM shim 在 Node 里跑真实 src/options.js）
+```
+
+`test:options` 覆盖：条目渲染、切「自定义…」后出现内联输入框、地址落盘、
+删除条目、单独恢复、批量删除 + 全部恢复。之所以用 DOM shim 而不是浏览器：
+本机的浏览器自动化取证一直不稳定（CDP 求值不通、扩展页 dump 受限），
+而设置页逻辑用假 DOM 驱动更确定，也能直接断言"点了删除之后 storage 里究竟写了什么"。
 
 ### 4. `Referer` 的已知限制
 

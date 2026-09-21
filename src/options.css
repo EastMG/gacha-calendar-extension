@@ -141,6 +141,57 @@ input[type="text"] {
 	font-size: 11px;
 }
 
+.btn.danger {
+	border-color: var(--danger);
+	color: var(--danger);
+}
+
+.btn.danger:hover {
+	background: rgba(217, 72, 77, 0.1);
+}
+
+/* 自定义来源地址：选中「自定义…」后在该条目下方整行展开 */
+.custom-line {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 16px;
+	padding: 0 4px 7px;
+}
+
+.custom-field {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex: 1 1 320px;
+	min-width: 240px;
+	font-size: 12px;
+}
+
+.custom-field > span {
+	flex: none;
+	color: var(--fg-faint);
+}
+
+.custom-field input {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+/* 已删除的条目 */
+.removed-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 6px 0;
+	border-bottom: 1px solid var(--border);
+	color: var(--fg-dim);
+}
+
+.removed-row:last-of-type {
+	border-bottom: none;
+}
+
 /* 条目表格 */
 .grid-head,
 .entry {

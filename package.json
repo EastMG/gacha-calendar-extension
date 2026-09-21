@@ -8,9 +8,11 @@
     "build": "node build.mjs",
     "verify": "node verify.mjs",
     "verify:domains": "node tools/check-domains.mjs",
-    "test:domains": "node tools/test-domain-guard.mjs",
     "verify:live": "node verify-live.mjs",
     "verify:chromium": "node tools/verify-chromium.mjs",
+    "test": "node tools/test-domain-guard.mjs && node tools/test-options.mjs",
+    "test:domains": "node tools/test-domain-guard.mjs",
+    "test:options": "node tools/test-options.mjs",
     "icons": "node make-icons.mjs",
     "zip": "node build.mjs --zip"
   },
