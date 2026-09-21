@@ -1,10 +1,16 @@
 #!/bin/sh
 # gacha-calendar-extension pre-commit hook
 #
-# WHY: 这个扩展有两个"静默失败"来源，都靠这里拦住：
-#   1) `manifest.json` 与 `package.json` 版本号不一致 → 发出去的包版本对不上
-#   2) 改了源码却忘了 build → dist/ 与源码不一致（而 dist/ 不入库，很难察觉）
-#   3) 权限/白名单漏配域名 → 某个来源在浏览器里静默抓不到（最隐蔽）
+# WHY: 这个扩展有三类"静默失败"来源，都靠这里拦住：
+#   1) 权限/白名单漏配域名 → 某个来源在浏览器里**完全抓不到**，不报错只是没数据（最隐蔽）
+#      —— 真实发生过：core 把重返未来 1999 换成 notice.sl916.com，扩展漏配，1999 抓不到
+#   2) `manifest.json` 与 `package.json` 版本号不一致 → 发出去的包版本对不上
+#   3) 改了源码却忘了 build → dist/ 与源码不一致（而 dist/ 不入库，很难察觉）
+#   4) 文件带 UTF-8 BOM → 浏览器解析 manifest.json 会失败（历史上有过事故）
+#
+# 具体检查由 `node verify.mjs` 执行，其中包含 tools/check-domains.mjs 的来源域名守卫：
+# 它把 core 实际抓取的每个域名与 manifest.host_permissions / background 白名单逐一对齐。
+# 想单独跑域名检查：`node tools/check-domains.mjs`
 #
 # Activation（每个 clone 一次）：
 #   git config core.hooksPath .githooks
@@ -14,7 +20,7 @@
 skip=${DSH_SKIP_VERIFY:-}
 fail=0
 
-# ---- BOM 守卫：DSH/浏览器读 JSON 都不吃 BOM，历史上有过事故 ----
+# ---- BOM 守卫：浏览器/DSH 读 JSON 都不吃 BOM ----
 for f in $(git diff --cached --name-only --diff-filter=ACM); do
 	case "$f" in
 		*.json|*.js|*.mjs|*.html|*.css|*.md|*.yml|*.yaml) ;;
@@ -36,9 +42,12 @@ if [ -z "$skip" ]; then
 			echo "  Fix: node build.mjs            # 看完整报错" >&2
 			fail=1
 		fi
+		# verify.mjs 内含来源域名守卫：core 抓取的域名必须都已授权，
+		# 否则该来源在浏览器里静默失败（见文件头 WHY 第 1 条）
 		if ! node verify.mjs >/dev/null 2>&1; then
-			echo "ERROR: node verify.mjs 未通过（manifest/权限/零远程代码等静态校验）。Commit blocked." >&2
-			echo "  Fix: node verify.mjs           # 看是哪一项" >&2
+			echo "ERROR: node verify.mjs 未通过（来源域名覆盖 / manifest / 权限 / 零远程代码 等静态校验）。Commit blocked." >&2
+			echo "  Fix: node verify.mjs                    # 看是哪一项" >&2
+			echo "       node tools/check-domains.mjs       # 只看来源域名覆盖" >&2
 			fail=1
 		fi
 	else

@@ -35,17 +35,6 @@ function check(name, ok, detail = "") {
 const UA =
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
-/** 与 src/background.js 的 ALLOW_HOSTS 解析出来，用于一致性校验。 */
-function readAllowHosts() {
-	const src = fs.readFileSync(path.join(SRC, "background.js"), "utf8");
-	const block = src.match(/const ALLOW_HOSTS = \[([\s\S]*?)\];/);
-	return block ? [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]) : [];
-}
-
-function hostAllowed(allow, hostname) {
-	return allow.some((h) => hostname === h || hostname.endsWith("." + h));
-}
-
 /**
  * Node 侧 transport：与 src/transport.js 的契约完全一致。
  *   fetchRaw     → 原样返回 Response
@@ -87,37 +76,11 @@ function makeTransport() {
 }
 
 async function main() {
-	say("=== 1. 来源域名覆盖校验（漏一个域名 = 那个源在浏览器里静默失败）===");
-	const mf = JSON.parse(fs.readFileSync(path.join(DIST, "manifest.json"), "utf8"));
-	const manifestHosts = mf.host_permissions.map((h) => h.replace(/^https:\/\//, "").replace(/\/\*$/, ""));
-	const allow = readAllowHosts();
-	check("background 白名单非空", allow.length > 0, `${allow.length} 条`);
+	// 来源域名覆盖由 verify.mjs（→ tools/check-domains.mjs）负责，这里是**单一权威实现**，
+	// 不再在本文件重复一份，避免两处逻辑漂移。提交钩子会自动跑 verify.mjs，所以它必然被执行。
+	// 单独跑：node tools/check-domains.mjs
 
-	// 从构建产物里抽出所有"会被请求的主机"。
-	// 注意：只取带路径的 URL（http(s)://host/...）—— 源码里还有裸域名字符串（如 referer "https://bluearchive.jp/"），
-	// 它们不是被 fetch 的目标，误收会变成假报警（第一版就踩了这个）。
-	const popupSrc = fs.readFileSync(path.join(DIST, "popup.js"), "utf8");
-	const urls = [...popupSrc.matchAll(/https?:\/\/[a-zA-Z0-9.\-]+\//g)].map((m) => m[0]);
-	const hosts = [...new Set(urls.map((u) => {
-		try {
-			return new URL(u).hostname;
-		} catch {
-			return null;
-		}
-	}).filter(Boolean))];
-	// 排除纯图标/展示用域名（它们只用于 <img>，不需要抓取白名单）
-	const ICON_HOSTS = ["storage.moegirl.org.cn", "webcnstatic.yostar.net", "play-lh.googleusercontent.com"];
-	const fetchHosts = hosts.filter((h) => !ICON_HOSTS.includes(h));
-	say(`  产物里出现的抓取用主机 ${fetchHosts.length} 个`);
-
-	const missingManifest = fetchHosts.filter((h) => !manifestHosts.includes(h));
-	check("每个抓取域名都在 manifest.host_permissions 里", missingManifest.length === 0, missingManifest.join(", "));
-	const missingAllow = fetchHosts.filter((h) => !hostAllowed(allow, h));
-	check("每个抓取域名都在 background 白名单里", missingAllow.length === 0, missingAllow.join(", "));
-	const iconInManifest = ICON_HOSTS.every((h) => manifestHosts.includes(h));
-	check("图标域名也在 host_permissions（否则 <img> 显示不出来）", iconInManifest);
-
-	say("\n=== 2. 真网络抓取（与扩展同一份 transport 契约）===");
+	say("=== 1. 真网络抓取（与扩展同一份 transport 契约）===");
 	// 直接跑已发布的 core 包（与扩展内联的是同一个版本）
 	const corePkgPath = path.join(ROOT, "node_modules", "gacha-calendar-core", "package.json");
 	const corePkg = JSON.parse(fs.readFileSync(corePkgPath, "utf8"));
@@ -153,7 +116,7 @@ async function main() {
 	check("契约字段齐全", result.schemaVersion === 1 && Object.keys(result.parserVersions || {}).length === 11, `schemaVersion=${result.schemaVersion}`);
 	// 注意：bwiki 会风控（连续请求返回 HTTP 567），触发时原神/星铁/绝区零/鸣潮会集体失败。
 	// 这是来源站的服务端限流，不是扩展缺陷，所以阈值放宽到"多数成功"即可；
-	// 真正的正确性由下面的"渲染模型 + 域名覆盖"保证。
+	// 真正的正确性由下面的"渲染模型"断言保证（域名覆盖见 verify.mjs）
 	check("卡池有内容 ≥ 5 款（bwiki 限流时仍应有非 bwiki 源成功）", gachaOk >= 5, `${gachaOk}/11`);
 	check("活动有内容 ≥ 5 款", eventOk >= 5, `${eventOk}/11`);
 
@@ -216,7 +179,7 @@ async function main() {
 		fs.writeFileSync(path.join(ROOT, "_live-verify.txt"), log.join("\n") + "\n", "utf8");
 		process.exit(1);
 	}
-	say("✓ 端到端验证通过（11 款实抓 + 渲染模型 + 域名覆盖）");
+	say("✓ 端到端验证通过（11 款实抓 + 渲染模型）");
 	fs.writeFileSync(path.join(ROOT, "_live-verify.txt"), log.join("\n") + "\n", "utf8");
 }
 

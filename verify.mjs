@@ -3,7 +3,9 @@
 // 覆盖（都来自 MV3 / 商店审核的真实硬性要求）：
 //   1. manifest 必填字段与取值合法（manifest_version / action / host_permissions 形态）
 //   2. manifest.version 与 package.json 一致
-//   3. background 的主机白名单与 manifest.host_permissions 一致（防"白名单漏了某个域名"）
+//   3. **来源域名覆盖**：core 实际抓取的每个域名都已授权（manifest + background 白名单）
+//      —— 见 tools/check-domains.mjs。这是本项目最危险的失误类型：core 一换源而扩展漏配
+//      权限，该来源在浏览器里会**静默抓不到**（曾真实发生：1999 的 notice.sl916.com）
 //   4. **零远程代码**：产物里不得出现 http(s) 的 import / importScripts / eval / new Function
 //   5. core 确实被内联进了 UI 产物（否则运行时就是"扩展没数据"）
 //   6. 图标齐全且是合法 PNG
@@ -12,6 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { analyzeDomains } from "./tools/check-domains.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(ROOT, "dist");
@@ -61,25 +64,29 @@ console.log("\n=== 2. 版本一致性 ===");
 const pkg = readJson(path.join(ROOT, "package.json"));
 check("package.json 与 manifest 版本一致", pkg.version === mf.version, `${pkg.version} / ${mf.version}`);
 
-console.log("\n=== 3. background 白名单 vs manifest.host_permissions ===");
-const bgSrc = fs.readFileSync(path.join(ROOT, "src", "background.js"), "utf8");
-const allowBlock = bgSrc.match(/const ALLOW_HOSTS = \[([\s\S]*?)\];/);
-if (!allowBlock) {
-	check("能解析出 ALLOW_HOSTS", false);
-} else {
-	const allow = [...allowBlock[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-	const manifestHosts = mf.host_permissions.map((h) => h.replace(/^https:\/\//, "").replace(/\/\*$/, ""));
-	// 反过来也要查：manifest 里给了权限但白名单没有 → 属于"权限给多了"
-	const extraAllow = allow.filter((h) => !manifestHosts.includes(h));
-	const missingAllow = manifestHosts.filter((h) => !allow.includes(h) && !/moegirl|yostar|googleusercontent/.test(h));
-	check("白名单中的域名都在 host_permissions 里", extraAllow.length === 0, extraAllow.join(", "));
-	check(
-		"host_permissions 的抓取域名都在白名单里（图标域名除外）",
-		missingAllow.length === 0,
-		missingAllow.join(", ")
-	);
-	check("白名单非空且不含通配", allow.length > 0 && !allow.some((h) => h.includes("*")), `${allow.length} 个域名`);
+const dom = analyzeDomains();
+console.log(`\n=== 3. 来源域名覆盖（core ${dom.coreVersion} → manifest + 白名单）===`);
+console.log(`  core 实际抓取 ${dom.fetchHosts.length} 个域名 / manifest ${dom.manifestHosts.length} 条 / 白名单 ${dom.allow.length} 条`);
+check(
+	`core 抓取的每个域名都在 manifest.host_permissions 里`,
+	dom.missingManifest.length === 0,
+	dom.missingManifest.length ? `缺 ${dom.missingManifest.join(", ")}` : "完整"
+);
+check(
+	`core 抓取的每个域名都在 background 白名单里（图标域名除外）`,
+	dom.missingAllow.length === 0,
+	dom.missingAllow.length ? `缺 ${dom.missingAllow.join(", ")}` : "完整"
+);
+check("白名单非空且不含通配", dom.allow.length > 0 && !dom.allow.some((h) => h.includes("*")), `${dom.allow.length} 个域名`);
+// 反向：申请了但 core 不再使用 → 只提示不失败（权限面可以精简，但不影响功能）
+if (dom.unusedManifest.length) {
+	console.log(`  ⚠ 已申请但 core 当前未使用（可清理以缩小权限面）：${dom.unusedManifest.join(", ")}`);
 }
+// 需要 host_permissions 的图标域名（否则 <img> 显示不出来）
+const iconMissing = ["storage.moegirl.org.cn", "webcnstatic.yostar.net", "play-lh.googleusercontent.com"].filter(
+	(h) => !dom.manifestHosts.includes(h)
+);
+check("图标域名也在 host_permissions 里", iconMissing.length === 0, iconMissing.join(", "));
 
 console.log("\n=== 4. 零远程代码（MV3 硬性要求）===");
 const jsFiles = ["background.js", "popup.js", "options.js", "core-version.js"];

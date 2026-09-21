@@ -17,7 +17,6 @@ const ALLOW_HOSTS = [
 	// 官方 / 官方 API
 	"api-takumi-static.mihoyo.com",
 	"aki-gm-resources-back.aki-game.com",
-	"aki-gm-resources-back-huoshan.aki-game.com",
 	"aki-gm-resources.aki-game.com",
 	"web-news.hypergryph.com",
 	"ak.hypergryph.com",
@@ -42,7 +41,6 @@ const ALLOW_HOSTS = [
 	"game8.co",
 	"www.ldshop.gg",
 	"www.gamekee.com",
-	"api-cdn.gamekee.com"
 ];
 
 /** 与 DSH 宿主代理一致的浏览器 UA（部分站按 UA 做反爬判定）。 */

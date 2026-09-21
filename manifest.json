@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "二游排期",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "11 款二次元手游的当期卡池与活动起止一览：原神/星铁/绝区零/鸣潮/明日方舟/终末地/蔚蓝档案三服/重返未来1999/异环。",
   "icons": {
     "16": "icons/icon-16.png",
@@ -35,7 +35,6 @@
     "https://prts.wiki/*",
     "https://api-takumi-static.mihoyo.com/*",
     "https://aki-gm-resources-back.aki-game.com/*",
-    "https://aki-gm-resources-back-huoshan.aki-game.com/*",
     "https://aki-gm-resources.aki-game.com/*",
     "https://web-news.hypergryph.com/*",
     "https://end.canmoe.com/*",
@@ -51,7 +50,6 @@
     "https://re.bluepoch.com/*",
     "https://game.xiaomi.com/*",
     "https://www.gamekee.com/*",
-    "https://api-cdn.gamekee.com/*",
     "https://storage.moegirl.org.cn/*",
     "https://webcnstatic.yostar.net/*",
     "https://play-lh.googleusercontent.com/*",

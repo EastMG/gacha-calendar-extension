@@ -99,14 +99,30 @@ transport = {
 **没有 ACAO**，浏览器会直接拦掉。而 service worker 凭 `host_permissions` 可以真正跨域，
 并能自行设置 `Referer` / `Origin`。
 
-### 3. 安全红线
+### 3. 安全红线与来源域名守卫
 
 - `src/background.js` 的 `ALLOW_HOSTS` **必须保留**：没有它就是"任意内网地址请求器"（SSRF）
 - 消息来源做校验（只接受本扩展自己的页面），否则任何网页都能驱使扩展发请求
 - `manifest.host_permissions` 不申请 `<all_urls>`：既是商店审核要求，也让权限提示可接受
-- `verify-live.mjs` 有一项**域名覆盖校验**：把产物里出现的所有抓取域名与
-  `host_permissions` / `ALLOW_HOSTS` 逐一对齐 —— 漏一个域名 = 那个源在浏览器里静默失败
-  （这条检查已经抓出过两个漏配域名：`ak.hypergryph.com`、`zzz.mihoyo.com`）
+
+**来源域名守卫**（`tools/check-domains.mjs`，已并入 `verify.mjs`，因此**每次提交都会跑**）：
+它把 core 实际抓取的每个域名，与 `manifest.host_permissions` 和 `background` 白名单逐一对齐。
+
+为什么这条最重要：**core 一换来源，扩展就必须同步申请权限，否则那个来源在浏览器里
+完全抓不到** —— 不报错、不提示，只是那一行没数据，肉眼极难定位。真实发生过两次：
+
+| 漏配域名 | 后果 |
+|---|---|
+| `ak.hypergryph.com`、`zzz.mihoyo.com` | 方舟 / 绝区零部分来源失效 |
+| `notice.sl916.com`、`www.sl916.com` | **重返未来 1999 完全抓不到**（core 换成了官方游戏内公告接口） |
+
+守卫还会**反向报告**"已申请但 core 当前不再使用"的域名，方便精简权限面
+（对上架审核友好）。单独运行：
+
+```bash
+npm run verify:domains     # 只看域名覆盖
+npm run test:domains       # 测守卫自身：该失败时失败、该通过时通过
+```
 
 ### 4. `Referer` 的已知限制
 
