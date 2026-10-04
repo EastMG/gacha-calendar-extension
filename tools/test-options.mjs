@@ -231,36 +231,52 @@ globalThis.URL = URL;
 const LAB = path.join(ROOT, "_opt-node-lab");
 fs.rmSync(LAB, { recursive: true, force: true });
 fs.mkdirSync(LAB, { recursive: true });
+
+// 复制 src 下的**全部**模块（.js → .mjs），并把相对 import 的后缀一并改写。
+// 为什么要全量复制而不是逐个点名：以前只复制用到的几个，导致每新增一个模块
+// （visibility.js、entry-meta.js…）测试就报 ERR_MODULE_NOT_FOUND，得再改一次测试。
+for (const f of fs.readdirSync(path.join(ROOT, "src"))) {
+	if (!f.endsWith(".js")) continue;
+	const code = fs.readFileSync(path.join(ROOT, "src", f), "utf8").replace(/from "(\.\/[a-z-]+)\.js"/g, 'from "$1.mjs"');
+	fs.writeFileSync(path.join(LAB, f.replace(/\.js$/, ".mjs")), code, "utf8");
+}
+
 let src = fs.readFileSync(path.join(ROOT, "src", "options.js"), "utf8");
 src = src.replace(
 	'from "gacha-calendar-core"',
 	`from ${JSON.stringify(pathToFileURL(path.join(LAB, "fake-core.mjs")).href)}`
 );
-src = src.replace('from "./storage.js"', `from ${JSON.stringify(pathToFileURL(path.join(LAB, "storage.mjs")).href)}`);
-src = src.replace('from "./transport.js"', `from ${JSON.stringify(pathToFileURL(path.join(LAB, "transport.mjs")).href)}`);
-// core 版本文件按相对路径被 import，放在同目录即可
-fs.copyFileSync(path.join(ROOT, "src", "storage.js"), path.join(LAB, "storage.mjs"));
-// options.js / popup.js 现在都依赖 visibility.js（条目可见性），一并复制真实源码
-fs.copyFileSync(path.join(ROOT, "src", "visibility.js"), path.join(LAB, "visibility.js"));
+// 相对 import 沿用上面的改法（与副本里的 .mjs 名一致）
+src = src.replace(/from "\.\/([a-z-]+)\.js"/g, 'from "./$1.mjs"');
+// 这两个必须用假的：transport 不能真联网；core-version 由构建注入
 fs.writeFileSync(
 	path.join(LAB, "transport.mjs"),
 	`export const transport = { fetchRaw() { throw new Error("no-net"); }, fetchViaProxy() { throw new Error("no-net"); } };\n`,
 	"utf8"
 );
-fs.writeFileSync(path.join(LAB, "core-version.js"), `export const CORE_VERSION = "0.0.0-test";\n`, "utf8");
+fs.writeFileSync(path.join(LAB, "core-version.mjs"), `export const CORE_VERSION = "0.0.0-test";\n`, "utf8");
 
-// 第 3 个条目刻意设为「出厂默认隐藏」——用来验证 defaultHidden / shown 的三态逻辑
-// （core 0.11.x 起有 5 个条目出厂隐藏，若 UI 只认 hidden 数组就会把它们错误显示出来）
+// 夹具刻意覆盖三种形态：
+//   · genshin —— 有来源标签 + 备选源
+//   · zzz     —— 出厂默认隐藏（验证 defaultHidden / shown 三态）
+//   · unsrc   —— **未配置**（无 source / 无 url），下拉应显示「未配置」而非「默认来源」
+//   · hostonly—— 无标签但有 url，下拉应退到域名（core getDefaultSourceName 的第 2 支）
 const SOURCES = [
-	{ id: "genshin", name: "原神", icon: "https://storage.moegirl.org.cn/a.png", source: "Bwiki", altSources: [{ label: "备选源A", value: "https://alt1/" }], defaultHidden: false },
+	{ id: "genshin", name: "原神", icon: "https://storage.moegirl.org.cn/a.png", source: "Bwiki", url: "https://wiki.biligame.com/ys/api.php", altSources: [{ label: "备选源A", value: "https://alt1/" }], defaultHidden: false },
 	{ id: "hsr", name: "崩坏：星穹铁道", icon: "https://storage.moegirl.org.cn/b.png", source: "Bwiki", defaultHidden: false },
-	{ id: "zzz", name: "绝区零", icon: "https://storage.moegirl.org.cn/c.png", source: "官方公告", defaultHidden: true }
+	{ id: "zzz", name: "绝区零", icon: "https://storage.moegirl.org.cn/c.png", source: "官方公告", defaultHidden: true },
+	{ id: "unsrc", name: "未配置样例", icon: "https://storage.moegirl.org.cn/d.png", defaultHidden: true },
+	{ id: "hostonly", name: "仅域名样例", icon: "https://storage.moegirl.org.cn/e.png", url: "https://www.gamekee.com/x", defaultHidden: false }
 ];
+/** 条目总数：下面所有断言都引用它，改夹具不必再逐个改数字。 */
+const N = SOURCES.length;
 fs.writeFileSync(
 	path.join(LAB, "fake-core.mjs"),
-	`export function createEngine() {
+	`const BUILTIN = ${JSON.stringify(SOURCES)};
+
+export function createEngine() {
   return {
-    __test: { SOURCES: ${JSON.stringify(SOURCES)} },
+    __test: { SOURCES: BUILTIN },
     async listGames() {
       // 与真实 core 的 getAllEntries 一致：
       //   removed 用 Array.isArray 读（原生数组）；customEntries 用 parseJsonStr 读（JSON 字符串）
@@ -270,11 +286,11 @@ fs.writeFileSync(
       try { customs = JSON.parse(cfg.customEntries || "[]") || []; } catch { customs = []; }
       // 与真实 core 一致：listGames **返回全部未删除条目**（含出厂隐藏的），
       // 其 hidden 字段只反映显式 hidden 列表 —— 可见性由 UI 侧按 defaultHidden/shown 判定。
-      return [...${JSON.stringify(SOURCES)}, ...(Array.isArray(customs) ? customs : [])]
+      return [...BUILTIN, ...(Array.isArray(customs) ? customs : [])]
         .filter((g) => !removed.includes(g.id))
         .map((g) => ({ ...g, custom: !!g.custom, hidden: false }));
     },
-    async selfCheck() { return { total: 3, summary: { ok: 3, nomatch: 0, down: 0 }, problems: [] }; }
+    async selfCheck() { return { total: BUILTIN.length, summary: { ok: 0, nomatch: 0, down: 0 }, problems: [] }; }
   };
 }
 `,
@@ -322,11 +338,33 @@ const entries = () => document.getElementById("entries").children;
 const removedList = () => document.getElementById("removed-list").children;
 
 console.log("=== 初始渲染 ===");
-check("渲染出 3 个条目", entries().length === 3, `${entries().length} 个`);
+check(`渲染出 ${N} 个条目`, entries().length === N, `${entries().length} 个`);
 check("条目行含来源下拉", entries()[0].querySelectorAll("select").length === 2, `${entries()[0].querySelectorAll("select").length} 个 select`);
 check("操作区含 ↑ ↓ 删除", entries()[0].querySelectorAll("button").length === 3);
 check("已删除区初始隐藏", document.getElementById("removed-card").hidden === true);
 check("权限限制说明已写入 datalist", document.getElementById("allowed-hosts").children.length === 2, `${document.getElementById("allowed-hosts").children.length} 个候选主机`);
+
+console.log("\n=== 来源下拉的「默认项」文案（与 core getDefaultSourceName 同口径）===");
+{
+	// 下拉第一项就是「默认来源」项，其文案必须与 core 的三支规则一致
+	const rowOfName = (name) => entries().find((e) => e.querySelector(".g-name").querySelector("span").textContent === name);
+	const defaultLabelOf = (name, isEvent) => {
+		const sels = rowOfName(name).querySelectorAll("select");
+		const sel = isEvent ? sels[1] : sels[0];
+		return sel.querySelectorAll("option")[0].textContent;
+	};
+	// 分支 1：有来源标签
+	check("有 source 标签 → 显示标签", defaultLabelOf("原神", false) === "Bwiki", defaultLabelOf("原神", false));
+	// 分支 3：未配置（无标签、无地址）→ 必须是裸「未配置」，不能是「默认来源」
+	check("未配置 → 显示「未配置」", defaultLabelOf("未配置样例", false) === "未配置", defaultLabelOf("未配置样例", false));
+	check("未配置（活动侧）→ 显示「未配置」", defaultLabelOf("未配置样例", true) === "未配置", defaultLabelOf("未配置样例", true));
+	check("「未配置」不含括号注释", !defaultLabelOf("未配置样例", false).includes("（"));
+	// 分支 2：无标签但有地址 → 退到域名（去 www.）
+	check("无标签但有地址 → 退到域名", defaultLabelOf("仅域名样例", false) === "gamekee.com", defaultLabelOf("仅域名样例", false));
+	// 全表复查：不应再出现旧的「默认来源」
+	const allFirstOptions = entries().flatMap((e) => e.querySelectorAll("select").map((s) => s.querySelectorAll("option")[0].textContent));
+	check("全表无「默认来源」字样", !allFirstOptions.includes("默认来源"), allFirstOptions.join(" / "));
+}
 
 console.log("\n=== 切到「自定义…」应出现内联输入框（而非 prompt 弹窗）===");
 const gachaSel = entries()[0].querySelectorAll("select")[0];
@@ -361,7 +399,7 @@ if (asyncErrors.length) {
 const _removedArr = store.get("removed") || [];
 
 check("removed 写入 genshin", JSON.stringify(_removedArr) === '["genshin"]', JSON.stringify(_removedArr));
-check("条目数减到 2", entries().length === 2, `${entries().length} 个`);
+check(`条目数减到 ${N - 1}`, entries().length === N - 1, `${entries().length} 个`);
 check("已删除区显示", document.getElementById("removed-card").hidden === false);
 check("已删除区列出该条目", removedList().length > 0 && removedList()[0].querySelector("span").textContent === "原神", removedList()[0]?.querySelector("span")?.textContent);
 check("删除时清掉了该条目的自定义地址", !("genshin" in JSON.parse(store.get("customUrls") || "{}")), store.get("customUrls"));
@@ -370,7 +408,7 @@ console.log("\n=== 单独恢复 ===");
 removedList()[0].querySelector("button").fire("click");
 await new Promise((r) => setTimeout(r, 80));
 check("removed 清空", JSON.stringify(store.get("removed") || []) === "[]", store.get("removed"));
-check("条目数回到 3", entries().length === 3, `${entries().length} 个`);
+check(`条目数回到 ${N}`, entries().length === N, `${entries().length} 个`);
 check("名字正确还原（原神）", entries()[0].querySelector(".g-name").querySelector("span").textContent === "原神");
 check("已删除区重新隐藏", document.getElementById("removed-card").hidden === true);
 
@@ -385,7 +423,7 @@ check("存在「全部恢复」按钮", allBtn && allBtn.textContent === "全部
 allBtn.fire("click");
 await new Promise((r) => setTimeout(r, 80));
 check("全部恢复后 removed 清空", (store.get("removed") || []).length === 0);
-check("条目数回到 3", entries().length === 3, `${entries().length} 个`);
+check(`条目数回到 ${N}`, entries().length === N, `${entries().length} 个`);
 
 console.log("\n=== 出厂默认隐藏（defaultHidden）的三态 ===");
 // 夹具里 zzz 是 defaultHidden: true —— 应显示为「未勾选」，且不应出现在任何 hidden 数组里
@@ -420,4 +458,4 @@ if (failed) {
 	console.log(`✗ ${failed} 项未通过`);
 	process.exit(1);
 }
-console.log("✓ 设置页行为验证全部通过（删除 / 单独恢复 / 全部恢复 / 内联自定义地址）");
+console.log("✓ 设置页行为验证全部通过（来源下拉文案 / 删除 / 恢复 / 内联自定义地址 / defaultHidden 三态）");

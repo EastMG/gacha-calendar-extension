@@ -12,6 +12,8 @@ import { createEngine } from "gacha-calendar-core";
 import { createStorage, readKeys, writeKeys } from "./storage.js";
 import { transport } from "./transport.js";
 import { createVisibility, toggleVisibility } from "./visibility.js";
+// 默认来源显示名与 core 的 getDefaultSourceName 同口径（含「未配置」文案）
+import { defaultSourceName } from "./entry-meta.js";
 
 const engine = createEngine({ transport, storage: createStorage() });
 
@@ -129,13 +131,6 @@ async function commit(patch) {
 		allGames = await engine.listGames();
 	}
 	render();
-}
-
-/** 默认来源显示名（与 DSH 同口径）：source 标签 > 「默认来源」。 */
-function defaultSourceName(game, isEvent) {
-	const label = isEvent ? game.eventSource : game.source;
-	if (label && label.trim() !== "") return label.trim();
-	return "默认来源";
 }
 
 /** 当前选中的来源值：无键=默认；"custom:" 前缀=自定义；其它=备选源值。 */
@@ -325,7 +320,7 @@ function renderSourceSelect(game, urls, isEvent) {
 		op.textContent = label;
 		sel.appendChild(op);
 	};
-	add("default", defaultSourceName(game, isEvent));
+	add("default", defaultSourceName(engine, game, isEvent));
 	for (const a of alts) add(a.value, a.label);
 	add("custom", "自定义…");
 
