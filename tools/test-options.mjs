@@ -116,6 +116,11 @@ class El {
 		if (value !== undefined) this.value = value;
 		this.fire("change");
 	}
+	/** 模拟勾选框被用户切换：真实浏览器里 `checked` 会先变，再派发 change。 */
+	fireCheck(checked) {
+		this.checked = checked;
+		this.fire("change");
+	}
 }
 
 /** 支持 #id、.class、tag、以及它们的组合（够本项目用）。 */
@@ -235,6 +240,8 @@ src = src.replace('from "./storage.js"', `from ${JSON.stringify(pathToFileURL(pa
 src = src.replace('from "./transport.js"', `from ${JSON.stringify(pathToFileURL(path.join(LAB, "transport.mjs")).href)}`);
 // core 版本文件按相对路径被 import，放在同目录即可
 fs.copyFileSync(path.join(ROOT, "src", "storage.js"), path.join(LAB, "storage.mjs"));
+// options.js / popup.js 现在都依赖 visibility.js（条目可见性），一并复制真实源码
+fs.copyFileSync(path.join(ROOT, "src", "visibility.js"), path.join(LAB, "visibility.js"));
 fs.writeFileSync(
 	path.join(LAB, "transport.mjs"),
 	`export const transport = { fetchRaw() { throw new Error("no-net"); }, fetchViaProxy() { throw new Error("no-net"); } };\n`,
@@ -242,10 +249,12 @@ fs.writeFileSync(
 );
 fs.writeFileSync(path.join(LAB, "core-version.js"), `export const CORE_VERSION = "0.0.0-test";\n`, "utf8");
 
+// 第 3 个条目刻意设为「出厂默认隐藏」——用来验证 defaultHidden / shown 的三态逻辑
+// （core 0.11.x 起有 5 个条目出厂隐藏，若 UI 只认 hidden 数组就会把它们错误显示出来）
 const SOURCES = [
-	{ id: "genshin", name: "原神", icon: "https://storage.moegirl.org.cn/a.png", source: "Bwiki", altSources: [{ label: "备选源A", value: "https://alt1/" }] },
-	{ id: "hsr", name: "崩坏：星穹铁道", icon: "https://storage.moegirl.org.cn/b.png", source: "Bwiki" },
-	{ id: "zzz", name: "绝区零", icon: "https://storage.moegirl.org.cn/c.png", source: "官方公告" }
+	{ id: "genshin", name: "原神", icon: "https://storage.moegirl.org.cn/a.png", source: "Bwiki", altSources: [{ label: "备选源A", value: "https://alt1/" }], defaultHidden: false },
+	{ id: "hsr", name: "崩坏：星穹铁道", icon: "https://storage.moegirl.org.cn/b.png", source: "Bwiki", defaultHidden: false },
+	{ id: "zzz", name: "绝区零", icon: "https://storage.moegirl.org.cn/c.png", source: "官方公告", defaultHidden: true }
 ];
 fs.writeFileSync(
 	path.join(LAB, "fake-core.mjs"),
@@ -259,6 +268,8 @@ fs.writeFileSync(
       const removed = Array.isArray(cfg.removed) ? cfg.removed : [];
       let customs = [];
       try { customs = JSON.parse(cfg.customEntries || "[]") || []; } catch { customs = []; }
+      // 与真实 core 一致：listGames **返回全部未删除条目**（含出厂隐藏的），
+      // 其 hidden 字段只反映显式 hidden 列表 —— 可见性由 UI 侧按 defaultHidden/shown 判定。
       return [...${JSON.stringify(SOURCES)}, ...(Array.isArray(customs) ? customs : [])]
         .filter((g) => !removed.includes(g.id))
         .map((g) => ({ ...g, custom: !!g.custom, hidden: false }));
@@ -375,6 +386,33 @@ allBtn.fire("click");
 await new Promise((r) => setTimeout(r, 80));
 check("全部恢复后 removed 清空", (store.get("removed") || []).length === 0);
 check("条目数回到 3", entries().length === 3, `${entries().length} 个`);
+
+console.log("\n=== 出厂默认隐藏（defaultHidden）的三态 ===");
+// 夹具里 zzz 是 defaultHidden: true —— 应显示为「未勾选」，且不应出现在任何 hidden 数组里
+const rowOf = (name) => entries().find((e) => e.querySelector(".g-name").querySelector("span").textContent === name);
+const zzzRow = rowOf("绝区零");
+const zzzCb = zzzRow.querySelector("input");
+check("默认隐藏条目的勾选框为未勾选", zzzCb.checked === false, `checked=${zzzCb.checked}`);
+check("初始不写 hidden（默认隐藏不该塞进 hidden 数组）", !(store.get("hidden") || []).includes("zzz"), JSON.stringify(store.get("hidden")));
+
+// 勾上 → 必须写 shown（只从 hidden 里删是没用的）
+zzzCb.fireCheck(true);
+await new Promise((r) => setTimeout(r, 80));
+check("勾上默认隐藏条目 → 写入 shown", (store.get("shown") || []).includes("zzz"), `shown=${JSON.stringify(store.get("shown"))}`);
+check("勾上后不写 hidden", !(store.get("hidden") || []).includes("zzz"), `hidden=${JSON.stringify(store.get("hidden"))}`);
+check("重新渲染后仍为勾选", rowOf("绝区零").querySelector("input").checked === true);
+
+// 再取消 → 移出 shown 并加入 hidden
+rowOf("绝区零").querySelector("input").fireCheck(false);
+await new Promise((r) => setTimeout(r, 80));
+check("取消后移出 shown", !(store.get("shown") || []).includes("zzz"), `shown=${JSON.stringify(store.get("shown"))}`);
+check("取消后加入 hidden", (store.get("hidden") || []).includes("zzz"), `hidden=${JSON.stringify(store.get("hidden"))}`);
+check("重新渲染后为未勾选", rowOf("绝区零").querySelector("input").checked === false);
+
+// 普通条目走 hidden 路径（不碰 shown）
+rowOf("原神").querySelector("input").fireCheck(false);
+await new Promise((r) => setTimeout(r, 80));
+check("隐藏普通条目 → 只写 hidden", (store.get("hidden") || []).includes("genshin") && !(store.get("shown") || []).includes("genshin"), `hidden=${JSON.stringify(store.get("hidden"))} shown=${JSON.stringify(store.get("shown"))}`);
 
 fs.rmSync(LAB, { recursive: true, force: true });
 console.log("");

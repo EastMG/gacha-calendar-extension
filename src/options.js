@@ -11,6 +11,7 @@
 import { createEngine } from "gacha-calendar-core";
 import { createStorage, readKeys, writeKeys } from "./storage.js";
 import { transport } from "./transport.js";
+import { createVisibility, toggleVisibility } from "./visibility.js";
 
 const engine = createEngine({ transport, storage: createStorage() });
 
@@ -46,6 +47,7 @@ const el = {
 let cfg = {
 	order: [],
 	hidden: [],
+	shown: [],
 	removed: [],
 	customEntries: [],
 	customUrls: {},
@@ -108,7 +110,7 @@ function parseJson(raw, fallback) {
  * 保存若干键。
  *
  * **类型约定（重要）**：内存态 `cfg` 一律持有"自然类型"——
- *   `removed` / `order` / `hidden` 是数组，`customUrls` / `customEventUrls` 是对象，
+ *   `removed` / `order` / `hidden` / `shown` 是数组，`customUrls` / `customEventUrls` 是对象，
  *   `customEntries` 是数组；只有**落盘时**才把三个 JSON 键序列化成字符串。
  *
  * 曾踩过的坑：早期版本让 cfg 直接持有落盘形态（有时是 JSON 字符串、有时是数组），
@@ -214,18 +216,17 @@ function renderEntry(game, index, order) {
 	name.appendChild(span);
 	row.appendChild(name);
 
-	// 展示开关
+	// 展示开关：勾选态 = 当前是否**可见**（不是"hidden 数组里有没有"）
 	const showCell = document.createElement("div");
 	showCell.className = "cell-center";
 	const cb = document.createElement("input");
 	cb.type = "checkbox";
-	cb.checked = !cfg.hidden.includes(game.id);
+	const vis = createVisibility(engine, cfg);
+	cb.checked = vis.isChecked(game.id);
 	cb.title = "是否在面板中显示";
 	cb.addEventListener("change", () => {
-		const next = cfg.hidden.includes(game.id)
-			? cfg.hidden.filter((x) => x !== game.id)
-			: [...cfg.hidden, game.id];
-		commit({ hidden: next });
+		// 默认隐藏的条目要写 shown 才能显示（见 src/visibility.js 的三态说明）
+		commit(toggleVisibility(engine, cfg, game.id, cb.checked));
 	});
 	showCell.appendChild(cb);
 	row.appendChild(showCell);
@@ -495,6 +496,7 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		readKeys([
 			"order",
 			"hidden",
+			"shown",
 			"removed",
 			"customEntries",
 			"customUrls",
@@ -507,6 +509,7 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 	cfg = {
 		order: asArray(stored.order),
 		hidden: asArray(stored.hidden),
+		shown: asArray(stored.shown),
 		// 自然类型（见 commit 的类型约定）：落盘的 JSON 字符串在这里解析回对象/数组
 		removed: Array.isArray(stored.removed) ? stored.removed : parseJson(stored.removed, []),
 		customEntries: Array.isArray(stored.customEntries) ? stored.customEntries : parseJson(stored.customEntries, []),

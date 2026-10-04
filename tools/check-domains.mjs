@@ -23,8 +23,32 @@ const CORE_PKG = path.join(ROOT, "node_modules", "gacha-calendar-core", "package
 const MANIFEST = path.join(ROOT, "manifest.json");
 const BACKGROUND = path.join(ROOT, "src", "background.js");
 
-/** 只用于 <img> 的域名：需要 host_permissions（否则图标不显示），但不需要进抓取白名单。 */
-const ICON_HOSTS = new Set(["storage.moegirl.org.cn", "webcnstatic.yostar.net", "play-lh.googleusercontent.com"]);
+/**
+ * 判定"图标域名"：该域名在 core 里的**每一次**出现都紧跟在 `icon:` 之后。
+ * 图标域名需要 host_permissions（否则 <img> 加载不出来），但不需要进抓取白名单。
+ *
+ * 为什么不硬编码清单：core 扩到 28 款后图标域名会随新游戏增加（mzstatic / dailygn 等），
+ * 硬编码清单每加一款游戏就要手改一次。这里按上下文判定，与升级时的分类口径一致。
+ */
+function iconHostsOf(text) {
+	const seen = new Map(); // host -> 是否每次都出现在 icon 位置
+	for (const m of text.matchAll(/https?:\/\/[A-Za-z0-9.\-]+\//g)) {
+		let h;
+		try {
+			h = new URL(m[0]).hostname;
+		} catch {
+			continue;
+		}
+		if (isNoise(h)) continue;
+		// 窗口取 200 字符：务必覆盖紧邻的 `icon: "` 前缀
+		const before = text.slice(Math.max(0, m.index - 200), m.index);
+		const atIcon = /\bicon\s*:\s*["'`]?\s*$/.test(before);
+		seen.set(h, (seen.get(h) ?? true) && atIcon);
+	}
+	const out = new Set();
+	for (const [h, all] of seen) if (all) out.add(h);
+	return out;
+}
 
 /** 非抓取用途的域名：SVG 命名空间、Markdown 文档链接等，不该被当成来源。 */
 function isNoise(host) {
@@ -86,22 +110,23 @@ export function allowedBy(allow, host) {
 /** 执行检查，返回结论（不打印、不退出），供 verify.mjs 与钩子复用。 */
 export function analyzeDomains() {
 	const core = readCoreText();
-	const fetchHosts = extractFetchHosts(core.text);
+	const allHosts = extractFetchHosts(core.text);
+	// 图标域名（每次出现都在 icon: 位置）不需要进抓取白名单，但仍需 host_permissions
+	const iconHosts = iconHostsOf(core.text);
 	const manifestHosts = readManifestHosts();
 	const allow = readAllowHosts();
 
-	const missingManifest = [...fetchHosts].filter((h) => !manifestHosts.has(h)).sort();
-	// 图标域名不需要进抓取白名单
-	const fetchHostsNeedingAllow = [...fetchHosts].filter((h) => !ICON_HOSTS.has(h));
-	const missingAllow = fetchHostsNeedingAllow.filter((h) => !allowedBy(allow, h)).sort();
+	const missingManifest = [...allHosts].filter((h) => !manifestHosts.has(h)).sort();
+	const missingAllow = [...allHosts].filter((h) => !iconHosts.has(h) && !allowedBy(allow, h)).sort();
 
-	// 反向：申请了但 core 不再抓取的（图标域名不算）
-	const unusedManifest = [...manifestHosts].filter((h) => !fetchHosts.has(h) && !ICON_HOSTS.has(h)).sort();
-	const unusedAllow = [...allow].filter((h) => !allowedBy(fetchHosts, h) && !fetchHosts.has(h)).sort();
+	// 反向：申请了但 core 不再用的（图标域名不算"未使用"）
+	const unusedManifest = [...manifestHosts].filter((h) => !allHosts.has(h) && !iconHosts.has(h)).sort();
+	const unusedAllow = [...allow].filter((h) => !allowedBy(allHosts, h) && !allHosts.has(h)).sort();
 
 	return {
 		coreVersion: core.version,
-		fetchHosts: [...fetchHosts].sort(),
+		fetchHosts: [...allHosts].sort(),
+		iconHosts: [...iconHosts].sort(),
 		manifestHosts: [...manifestHosts].sort(),
 		allow: [...allow].sort(),
 		missingManifest,

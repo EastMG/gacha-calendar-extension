@@ -72,10 +72,13 @@ function expect(name, cond, detail = "") {
 }
 
 // —— 用例 4：图标域名不需要进抓取白名单 → 通过 ——
+// 注意：图标判定是**按上下文动态识别**（URL 紧跟在 `icon:` 之后），
+// 所以夹具要写成真实 core 的样子；写成裸赋值会被正确判为抓取域名。
 {
-	const dir = makeLab("icon", `const I = "https://storage.moegirl.org.cn/moegirl/commons/x.png";\n`);
+	const dir = makeLab("icon", `registerSource({ id: "x", icon: "https://storage.moegirl.org.cn/moegirl/commons/x.png" });\n`);
 	const r = run(dir);
 	expect("图标域名（在 manifest、不在白名单）→ 退出码 0", r.started && r.code === 0, `exit ${r.code}`);
+	if (r.code !== 0) console.log("    输出：\n      " + r.out.trim().split("\n").slice(0, 6).join("\n      "));
 }
 
 fs.rmSync(LAB, { recursive: true, force: true });

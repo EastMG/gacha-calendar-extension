@@ -13,7 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { analyzeDomains } from "./tools/check-domains.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -130,8 +130,29 @@ const CORE_MARKERS = [
 	"ldshop.gg"
 ];
 const missingMarkers = CORE_MARKERS.filter((m) => !popupSrc.includes(m));
-check("UI 产物内联了 core（含 13 个来源特征）", missingMarkers.length === 0, missingMarkers.join(", "));
-check("UI 产物含 11 款游戏名（含「原神」「异环」）", popupSrc.includes("原神") && popupSrc.includes("异环"));
+check(`UI 产物内联了 core（含 ${CORE_MARKERS.length} 个来源特征域名）`, missingMarkers.length === 0, missingMarkers.join(", "));
+
+// 产物体积下界：core 0.11.x 内联后 popup.js 约 400 KB；若明显偏小说明 core 没被完整打进去。
+// （不设上界，避免每次扩游戏都要调；也不去搜游戏名——见下方说明）
+const popupKb = Math.round(popupSrc.length / 1024);
+check("popup.js 体积达到内联 core 的量级（>250 KB）", popupSrc.length > 250 * 1024, `${popupKb} KB`);
+
+// core 的条目数据：**从 core 运行时取**，不写死数字（core 已从 11 款扩到 28 款）。
+// 注意：这里**不去产物里搜游戏名**。实测产物中中文被 esbuild 以大写 \uXXXX 转义，
+// 且部分名称只以正则片段形式存在（如 /蔚蓝档案)?\s*(?:日服|国际服|国服)?/），
+// 直接搜名字既脆弱又测不到关键点。"条目是否齐全"由 verify-live.mjs 真跑一轮来负责。
+const corePkgMain = readJson(path.join(ROOT, "node_modules", "gacha-calendar-core", "package.json")).main || "./core.mjs";
+const coreEntry = await import(pathToFileURL(path.join(ROOT, "node_modules", "gacha-calendar-core", corePkgMain)).href);
+const probeEngine = coreEntry.createEngine({ transport: {}, storage: { async get() {}, async set() {} } });
+const coreSources = probeEngine.__test.SOURCES;
+const coreEntryCount = coreSources.length;
+check("core 运行时暴露全部内置条目（>11）", coreEntryCount > 11, `${coreEntryCount} 个`);
+check(
+	"条目表含 tz / defaultHidden 字段（0.11.x 新增能力）",
+	coreSources.every((s) => typeof s.tz === "string" && typeof s.defaultHidden === "boolean")
+);
+const defHiddenCount = coreSources.filter((s) => s.defaultHidden).length;
+console.log(`  说明：core ${dom.coreVersion} 共 ${coreEntryCount} 个条目，其中 ${defHiddenCount} 个出厂默认隐藏`);
 const coreVersionFile = fs.readFileSync(path.join(DIST, "core-version.js"), "utf8");
 const coreVerMatch = coreVersionFile.match(/"([\d.]+)"/);
 const installedCore = readJson(path.join(ROOT, "node_modules", "gacha-calendar-core", "package.json")).version;

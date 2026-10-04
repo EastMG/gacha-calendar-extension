@@ -6,7 +6,7 @@
 // 与扩展代码无关。所以"浏览器里点开 popup"这一步留给人工确认（见 README）。
 //
 // 本脚本把**能自动化的部分做到最实**：
-//   1. 真网络：用与扩展**同一份 transport 契约**跑 core，真抓 11 款游戏
+//   1. 真网络：用与扩展**同一份 transport 契约**跑 core，真抓全部出厂条目
 //   2. 真渲染模型：用与 popup **同一份纯函数** buildRowModel 算每一行显示什么，并断言内容
 //   3. 覆盖校验：把源码里出现的所有来源域名，与 manifest.host_permissions / background 白名单
 //      逐一对齐 —— 这是最容易犯、也最致命的错（漏一个域名 → 那个源在浏览器里静默失败）
@@ -101,7 +101,15 @@ async function main() {
 	say(`  core 版本: ${corePkg.version}`);
 
 	const games = await engine.listGames();
-	check("listGames 返回 11 款", games.length === 11, games.map((g) => g.name).join("、"));
+	// 条目数**不写死**：core 已从 11 款扩到 28 款，且用户可能删除条目，
+	// 所以以 core 当前的出厂条目数为基准做断言。
+	const factoryCount = engine.__test.SOURCES.length;
+	const TOTAL = games.length;
+	check(
+		`listGames 返回全部出厂条目（${TOTAL}/${factoryCount}）`,
+		TOTAL === factoryCount && factoryCount > 11,
+		`${TOTAL} 款：${games.map((g) => g.name).join("、")}`
+	);
 
 	const t0 = Date.now();
 	const result = await engine.refresh();
@@ -111,34 +119,46 @@ async function main() {
 	const gachaOk = ids.filter((id) => has(result.games[id].banner)).length;
 	const eventOk = ids.filter((id) => has(result.games[id].event)).length;
 	const down = ids.filter((id) => result.games[id].gachaFail && result.games[id].gachaFail.kind === "down").length;
-	say(`  请求 ${reqLog.length} 次，用时 ${secs}s；卡池 ${gachaOk}/11，活动 ${eventOk}/11，down=${down}`);
-	check("抓取覆盖 11 款", ids.length === 11);
-	check("契约字段齐全", result.schemaVersion === 1 && Object.keys(result.parserVersions || {}).length === 11, `schemaVersion=${result.schemaVersion}`);
-	// 注意：bwiki 会风控（连续请求返回 HTTP 567），触发时原神/星铁/绝区零/鸣潮会集体失败。
-	// 这是来源站的服务端限流，不是扩展缺陷，所以阈值放宽到"多数成功"即可；
-	// 真正的正确性由下面的"渲染模型"断言保证（域名覆盖见 verify.mjs）
-	check("卡池有内容 ≥ 5 款（bwiki 限流时仍应有非 bwiki 源成功）", gachaOk >= 5, `${gachaOk}/11`);
-	check("活动有内容 ≥ 5 款", eventOk >= 5, `${eventOk}/11`);
+	say(`  请求 ${reqLog.length} 次，用时 ${secs}s；卡池 ${gachaOk}/${TOTAL}，活动 ${eventOk}/${TOTAL}，down=${down}`);
+	check(`抓取覆盖全部 ${TOTAL} 款`, ids.length === TOTAL);
+	// parserVersions 只覆盖「登记了 parserVersion 的条目」。实测 core 0.11.1 里只有原 11 款填了，
+	// 新增的 17 款没填 —— 这是 core 侧的现状（新条目未登记解析器版本），不是扩展缺陷。
+	// 所以只断言"是子集且非空"，并显式说明，避免误以为扩展丢了字段。
+	const pvCount = Object.keys(result.parserVersions || {}).length;
+	check(
+		"契约字段齐全（schemaVersion 1 + parserVersions 非空子集）",
+		result.schemaVersion === 1 && pvCount > 0 && pvCount <= TOTAL,
+		`schemaVersion=${result.schemaVersion}，parserVersions ${pvCount}/${TOTAL} 项`
+	);
+	if (pvCount < TOTAL) {
+		say(`  ⚠ 说明：core ${corePkg.version} 中仅 ${pvCount} 款登记了 parserVersion（新条目未登记），非扩展问题`);
+	}
+	// 注意：bwiki 会风控（连续请求返回 HTTP 567），触发时相关来源集体失败；
+	// 另外 28 款里有若干来源本身不稳定。这是来源站问题，不是扩展缺陷，
+	// 所以按"多数成功"设阈值；真正的正确性由下面的"渲染模型"断言保证（域名覆盖见 verify.mjs）
+	const minOk = Math.ceil(TOTAL * 0.5);
+	check(`卡池有内容 ≥ ${minOk} 款`, gachaOk >= minOk, `${gachaOk}/${TOTAL}`);
+	check(`活动有内容 ≥ ${minOk} 款`, eventOk >= minOk, `${eventOk}/${TOTAL}`);
 
 	say("\n=== 3. 缓存落盘（storage 契约）===");
 	check("写入了 lastData", typeof mem.get("lastData") === "string" && mem.get("lastData").length > 0);
 	check("写入了 lastRefresh", typeof mem.get("lastRefresh") === "number" && mem.get("lastRefresh") > 0);
 	check("lastSource = web", mem.get("lastSource") === "web");
 	const cached = await engine.getCached();
-	check("getCached 读回 11 款", Object.keys(cached.games).length === 11, `${Object.keys(cached.games).length} 款`);
+	check(`getCached 读回 ${TOTAL} 款`, Object.keys(cached.games).length === TOTAL, `${Object.keys(cached.games).length} 款`);
 
 	say("\n=== 4. 渲染模型（与 popup 同一份纯函数）===");
 	// 直接 import 扩展的 view-helpers 源码 —— 与 popup.js 用的是同一个文件
 	const vh = await import(pathToFileURL(path.join(SRC, "view-helpers.js")).href);
 	const now = new Date();
 	const rows = games.map((g) => vh.buildRowModel(g, result.games[g.id] || vh.defaultRecord(g), now));
-	check("算出 11 行", rows.length === 11);
+	check(`算出 ${TOTAL} 行`, rows.length === TOTAL);
 	const cell = (r, k) => r[k] && r[k].value;
 	const rowsGacha = rows.filter((r) => cell(r, "gacha") && cell(r, "gacha") !== "—").length;
 	const rowsEvent = rows.filter((r) => cell(r, "event") && cell(r, "event") !== "—").length;
 	say(`  卡池列有内容 ${rowsGacha} 行，活动列 ${rowsEvent} 行`);
-	check("卡池列有内容 ≥ 5 行", rowsGacha >= 5, `${rowsGacha} 行`);
-	check("活动列有内容 ≥ 5 行", rowsEvent >= 5, `${rowsEvent} 行`);
+	check(`卡池列有内容 ≥ ${minOk} 行`, rowsGacha >= minOk, `${rowsGacha} 行`);
+	check(`活动列有内容 ≥ ${minOk} 行`, rowsEvent >= minOk, `${rowsEvent} 行`);
 	// 行标题格式：有成功记录时是"名称\n刷新时间 …"；两侧都没抓到新数据时只有名称（这是正确行为）
 	check(
 		"行标题格式正确（名称 + 可选刷新时间）",
@@ -161,7 +181,7 @@ async function main() {
 
 	say("\n=== 5. 顶部提示（core 的 buildScrapeInfo 调用口径）===");
 	const info = vh.buildScrapeInfo(games.map((g) => ({ id: g.id, name: g.name })), result);
-	check("生成「成功 N/M」提示", /成功\s+\d+\/11/.test(info.info), info.info);
+	check("生成「成功 N/M」提示", new RegExp("成功\\s+\\d+/" + TOTAL).test(info.info), info.info);
 	check("失败分类明细为数组", Array.isArray(info.lines));
 
 	say("\n=== 逐款结果 ===");
@@ -170,7 +190,7 @@ async function main() {
 			g.gachaFail ? `卡池:${g.gachaFail.kind}${g.gachaFail.reason ? "(" + g.gachaFail.reason + ")" : ""}` : "",
 			g.eventFail ? `活动:${g.eventFail.kind}${g.eventFail.reason ? "(" + g.eventFail.reason + ")" : ""}` : ""
 		].filter(Boolean).join(" ");
-		say(`  ${id.padEnd(11)} ${(g.banner || "—").slice(0, 24).padEnd(24)} ${(g.event || "—").slice(0, 20).padEnd(20)} ${f}`);
+		say(`  ${id.padEnd(14)} ${(g.banner || "—").slice(0, 24).padEnd(24)} ${(g.event || "—").slice(0, 20).padEnd(20)} ${f}`);
 	}
 
 	say("");
@@ -179,7 +199,7 @@ async function main() {
 		fs.writeFileSync(path.join(ROOT, "_live-verify.txt"), log.join("\n") + "\n", "utf8");
 		process.exit(1);
 	}
-	say("✓ 端到端验证通过（11 款实抓 + 渲染模型）");
+	say(`✓ 端到端验证通过（${TOTAL} 款实抓 + 渲染模型）`);
 	fs.writeFileSync(path.join(ROOT, "_live-verify.txt"), log.join("\n") + "\n", "utf8");
 }
 

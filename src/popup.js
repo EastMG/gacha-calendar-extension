@@ -7,6 +7,7 @@
 import { createEngine } from "gacha-calendar-core";
 import { createStorage, readKeys } from "./storage.js";
 import { transport } from "./transport.js";
+import { createVisibility } from "./visibility.js";
 import { buildRowModel, defaultRecord, buildScrapeInfo } from "./view-helpers.js";
 
 const engine = createEngine({ transport, storage: createStorage() });
@@ -57,11 +58,13 @@ async function loadState() {
 	const [games, cached, cfg] = await Promise.all([
 		engine.listGames(),
 		engine.getCached(),
-		readKeys(["order", "hidden", "lastSource", "refreshMinutes", "autoRefresh"])
+		// shown 是 core 0.11.x 新增的键：默认隐藏的条目被用户打开后记在这里
+		readKeys(["order", "hidden", "shown", "lastSource", "refreshMinutes", "autoRefresh"])
 	]);
 	const order = Array.isArray(cfg.order) ? cfg.order : [];
-	const hidden = Array.isArray(cfg.hidden) ? cfg.hidden : [];
-	state.games = applyOrder(games, order).filter((g) => !hidden.includes(g.id));
+	// 可见性不能只看 hidden：core 有 5 个条目出厂默认隐藏（判定见 src/visibility.js）
+	const vis = createVisibility(engine, cfg);
+	state.games = applyOrder(games, order).filter((g) => !vis.isHidden(g.id));
 	state.records = cached.games || {};
 	state.refreshedAt = cached.refreshedAt || 0;
 	state.lastSource = cfg.lastSource || "none";
