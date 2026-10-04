@@ -2,7 +2,7 @@
 //
 // 职责只有一件：**代扩展的其他页面发跨域请求**。
 //
-// 为什么必须放在这里：扩展的内容脚本 / popup 仍然受页面同源策略约束，抓取 25 个来源里
+// 为什么必须放在这里：扩展的内容脚本 / popup 仍然受页面同源策略约束，抓取 40+ 个来源里
 // 只有 6 个带 CORS 放行头；其余（canmoe / fz.wiki / 万美 / game8 / ldshop / 1999 /
 // 蔚蓝国服 / Nexon / GameKee / 小米 / wiki.gg）都会因为没有 ACAO 而被浏览器拦掉。
 // 而 background service worker 凭 manifest 的 host_permissions 可以真正跨域，

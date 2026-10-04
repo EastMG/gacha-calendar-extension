@@ -1,4 +1,4 @@
-// popup：二游排期面板。
+// popup：二游日历面板。
 //
 // 数据全部来自 gacha-calendar-core 的引擎（抓取/解析/缓存合并都在 core 里）；
 // 本文件只做两件事：**读引擎返回的 Result JSON** 和 **把它画成 DOM**。

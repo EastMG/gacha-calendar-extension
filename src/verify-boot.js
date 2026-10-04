@@ -49,6 +49,11 @@ async function runSelfTest() {
 	const engine = createEngine({ transport, storage: memStorage() });
 	const out = { at: Date.now(), where: "service_worker", steps: {} };
 
+	// 期望条目数：从 core 的出厂条目表取，**不写死数字**。
+	// （core 已从 11 款扩到 28 款；写死会让这里在每次扩表后静默变 false。）
+	const expected = (engine.__test && Array.isArray(engine.__test.SOURCES) && engine.__test.SOURCES.length) || 0;
+	out.expected = expected;
+
 	// 0. 环境自证
 	try {
 		const mf = chrome.runtime.getManifest();
@@ -69,7 +74,7 @@ async function runSelfTest() {
 	try {
 		games = await engine.listGames();
 		out.steps.listGames = {
-			ok: games.length === 11,
+			ok: games.length === expected,
 			count: games.length,
 			names: games.map((g) => g.name),
 			ids: games.map((g) => g.id)
@@ -104,7 +109,7 @@ async function runSelfTest() {
 		const ids = Object.keys(result.games);
 		const has = (v) => typeof v === "string" && v.length > 0;
 		out.steps.refresh = {
-			ok: ids.length === 11,
+			ok: ids.length === expected,
 			elapsedMs: Date.now() - t0,
 			schemaVersion: result.schemaVersion,
 			parserVersionCount: Object.keys(result.parserVersions || {}).length,
@@ -129,7 +134,7 @@ async function runSelfTest() {
 		const now = new Date();
 		const rows = games.map((g) => buildRowModel(g, result.games[g.id] || defaultRecord(g), now));
 		out.steps.rows = {
-			ok: rows.length === 11,
+			ok: rows.length === expected,
 			count: rows.length,
 			rows: rows.map((r) => ({
 				name: r.name,

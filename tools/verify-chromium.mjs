@@ -4,7 +4,7 @@
 //   1. `node build.mjs --verify` 把 src/verify-boot.js 打进 background.js
 //      —— service worker 一定会随扩展加载而执行，是浏览器里最可靠的落点
 //   2. 启动 Chromium 系浏览器并加载 dist/
-//   3. service worker 自己跑完 11 款实抓 + 两条取数通道检查，把报告写进 chrome.storage.local
+//   3. service worker 自己跑完全部出厂条目实抓 + 两条取数通道检查，把报告写进 chrome.storage.local
 //   4. 关掉浏览器，从 profile 的 LevelDB 里把报告读回来断言
 //
 // 为什么不用 CDP：部分环境下 Node 内置 WebSocket 与 Chrome DevTools 协议层不通
@@ -143,7 +143,7 @@ async function main() {
 	);
 	say(`  pid ${child.pid}`);
 
-	// 逐个候选打开 popup.html，能打开（标题变为"二游排期"）的就是本项目扩展
+	// 逐个候选打开 popup.html，能打开（标题变为"二游日历"）的就是本项目扩展
 	let ownId = null;
 	for (let i = 0; i < 60 && !ownId; i++) {
 		await sleep(500);
@@ -169,7 +169,7 @@ async function main() {
 			if (page) {
 				ownId = id;
 				say(`  扩展 ID: ${ownId}  title="${page.title}"`);
-				check("扩展加载并在浏览器中打开 popup 页面", /二游排期/.test(page.title || ""), `title="${page.title}"`);
+				check("扩展加载并在浏览器中打开 popup 页面", /二游日历/.test(page.title || ""), `title="${page.title}"`);
 			}
 		}
 	}
@@ -233,21 +233,34 @@ async function main() {
 		check("chrome.storage 可用", env.hasStorage === true);
 		check("host_permissions 生效", env.hostCount >= 24, `${env.hostCount} 条`);
 
-		check("listGames 返回 11 款", !!(s.listGames && s.listGames.ok), s.listGames ? `${s.listGames.count} 款` : "无");
+		// 期望条目数由 service worker 自检从 core 出厂表算出（不写死）
+		const TOTAL = s.expected || 0;
+		check("service worker 算出期望条目数", TOTAL > 11, `${TOTAL} 款`);
+		check(`listGames 返回全部 ${TOTAL} 款`, !!(s.listGames && s.listGames.ok), s.listGames ? `${s.listGames.count} 款` : "无");
 		check("直连通道可用", !!(s.rawOk && s.rawOk.ok), s.rawOk ? `HTTP ${s.rawOk.status}, ${s.rawOk.len} B` : JSON.stringify(s.rawOk));
 		check("代发通道可用（经 background 跨域）", !!(s.proxyOk && s.proxyOk.ok), s.proxyOk ? `${s.proxyOk.len} B` : JSON.stringify(s.proxyOk));
 
 		const r = s.refresh || {};
-		check("真抓覆盖 11 款", r.ok === true, `${r.total} 款，${((r.elapsedMs || 0) / 1000).toFixed(1)}s`);
-		check("契约字段齐全", r.schemaVersion === 1 && r.parserVersionCount === 11, `v${r.schemaVersion}, ${r.parserVersionCount} 项`);
-		// bwiki 会风控（HTTP 567），阈值放宽；非 bwiki 源应全部成功
-		check("卡池有内容 ≥ 5 款", r.gacha >= 5, `${r.gacha}/11`);
-		check("活动有内容 ≥ 5 款", r.event >= 5, `${r.event}/11`);
+		check(`真抓覆盖全部 ${TOTAL} 款`, r.ok === true, `${r.total} 款，${((r.elapsedMs || 0) / 1000).toFixed(1)}s`);
+		// parserVersions 只覆盖登记了 parserVersion 的条目（实测 11 项，新增款未登记）→ 只断言非空子集
+		check(
+			"契约字段齐全",
+			r.schemaVersion === 1 && r.parserVersionCount > 0 && r.parserVersionCount <= TOTAL,
+			`v${r.schemaVersion}，parserVersions ${r.parserVersionCount}/${TOTAL} 项`
+		);
+		// bwiki 会风控（HTTP 567），阈值按条目数取半；非 bwiki 源应全部成功
+		const minOk = Math.ceil(TOTAL * 0.5);
+		check(`卡池有内容 ≥ ${minOk} 款`, r.gacha >= minOk, `${r.gacha}/${TOTAL}`);
+		check(`活动有内容 ≥ ${minOk} 款`, r.event >= minOk, `${r.event}/${TOTAL}`);
 
 		const rows = (s.rows && s.rows.rows) || [];
-		check("面板渲染模型算出 11 行", rows.length === 11, `${rows.length} 行`);
+		check(`面板渲染模型算出 ${TOTAL} 行`, rows.length === TOTAL, `${rows.length} 行`);
 		check("起止列出现倒计时", rows.some((x) => /还剩|还有|已结束/.test(x.gachaDates || "")), "");
-		check("顶部提示已生成", /成功\s+\d+\/11/.test((s.scrapeInfo && s.scrapeInfo.info) || ""), (s.scrapeInfo && s.scrapeInfo.info) || "");
+		check(
+			"顶部提示已生成",
+			new RegExp("成功\\s+\\d+/" + TOTAL).test((s.scrapeInfo && s.scrapeInfo.info) || ""),
+			(s.scrapeInfo && s.scrapeInfo.info) || ""
+		);
 		if (rows.length) {
 			say("  逐行：");
 			for (const x of rows) {

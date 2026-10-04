@@ -23,7 +23,7 @@
 2. 打开 `edge://extensions` 或 `chrome://extensions`
 3. 打开右下角/右上角的 **开发人员模式**
 4. 点 **加载解压缩的扩展**，选择本项目的 `dist/` 目录（或Release `.zip` 解压后的目录）
-5. 点工具栏的「二游排期」图标 → 首次打开会自动抓一轮
+5. 点工具栏的「二游日历」图标 → 首次打开会自动抓一轮
 
 ## 使用
 
@@ -88,9 +88,14 @@ src/options.*          设置页
 src/verify-boot.js     启动自检（仅 `--verify` 构建时打进 background.js，正常构建不含）
 tools/verify-chromium.mjs  Chromium 运行时验证（需在普通桌面环境跑）
 tools/check-domains.mjs    来源域名守卫（已并入 verify.mjs，每次提交自动跑）
-tools/test-domain-guard.mjs / tools/test-options.mjs  两个自测（见「测试」一节）
-build.mjs              构建（内联 core + 校验清单）
-verify.mjs             静态校验（27 项）
+tools/test-domain-guard.mjs   域名守卫自测
+tools/test-entry-meta.mjs     来源显示名口径自测
+tools/test-options.mjs        设置页行为自测（DOM shim）
+tools/make-popup-shot.mjs     生成面板截图夹具（真抓一轮 + chrome 桩）
+tools/serve-shot.mjs          临时静态服务（给截图夹具用；Playwright 禁 file://）
+tools/verify-zip.mjs          release zip 自校验（自己解压 + 核 CRC32）
+build.mjs              构建（内联 core + 校验清单 + 打包 zip）
+verify.mjs             静态校验
 verify-live.mjs        端到端校验（真网络抓 28 款 + 渲染模型）
 make-icons.mjs         生成图标（Node 内置 zlib 手写 PNG，字节可复现）
 .githooks/pre-commit   提交守卫：BOM 检查 + build + verify
@@ -114,11 +119,16 @@ transport = {
 
 ### 2. 为什么必须经 background 代发
 
-实测 25 个来源里，只有 6 个回 `access-control-allow-origin`（Bwiki、PRTS、
-`api-web.bluearchive.jp`、绝区零/鸣潮官方 API、GachaTracker）；其余 12 个
-（canmoe / fz.wiki / 万美 / game8 / ldshop / 1999 / 蔚蓝国服 / Nexon / GameKee / 小米 / wiki.gg）
-**没有 ACAO**，浏览器会直接拦掉。而 service worker 凭 `host_permissions` 可以真正跨域，
-并能自行设置 `Referer` / `Origin`。
+实测 22 个主来源域名里，只有 **4 个**回 `access-control-allow-origin`
+（`aki-gm-resources-back.aki-game.com`、`api-takumi-static.mihoyo.com`、
+`api-web.bluearchive.jp`、`sekai-world.github.io`）；其余 **18 个**
+（Bwiki / canmoe / fz.wiki / 万美 / 蔚蓝国服 / Nexon / GameKee / 赛马娘 / FGO / p5x /
+少前2 / 1999 / 崩坏3 等）**没有 ACAO**，浏览器在页面上下文里会直接拦掉。
+而 service worker 凭 `host_permissions` 可以真正跨域，并能自行设置 `Referer` / `Origin`。
+
+> 这条数字随 core 换来源而变，所以别照抄旧值。复测方法：对每个主来源域名发一次请求，
+> 看响应有没有 `access-control-allow-origin`。core 抓取域名共 **43** 个
+> （另有 6 个仅用于 `<img>` 图标），完整清单见 `manifest.host_permissions`。
 
 ### 3. 安全红线与来源域名守卫
 
@@ -182,21 +192,27 @@ npm run test:options       # 设置页行为（用极简 DOM shim 在 Node 里�
 | 域名守卫自测（该失败时失败、该通过时通过） | **4/4 通过** |
 | 端到端：真网络抓 **28 款**（与扩展同一份 transport 契约、同一份 core） | **通过（卡池 22/28、活动 22/28）** |
 | 端到端：渲染模型（与 popup 同一份纯函数）逐项断言 | **通过** |
-| **真实 Chromium：扩展加载 + 面板渲染** | **✅ 已取证**（见 `assets/popup.png`，为 v0.1.x 的 11 款时期截图） |
-| **真实 Chromium：实抓落库** | ⚠️ 未在本机取证，请在普通桌面环境跑 `node tools/verify-chromium.mjs` |
+| **真实 Chromium：渲染构建产物（面板）** | **✅ 已取证**（见 `assets/popup.png`，当前版本，含 23 行可见条目与真实抓取结果） |
+| **真实 Chromium：加载扩展本体并实抓落库** | ⚠️ 未在本机取证，请在普通桌面环境跑 `node tools/verify-chromium.mjs` |
 
-> 截图 `assets/popup.png` 拍摄于 11 款时期，面板布局未变；28 款的实际渲染请自行确认。
+### 已取证的部分：面板渲染
 
-### 已取证的部分（真实 Edge，无头模式截图）
+`assets/popup.png` 是用**真实浏览器**渲染 `dist/` 的构建产物（`popup.js` + `popup.css`）得到的，
+数据是**真网络抓的一轮结果**（`成功 21/23`）。图里可以看到：
 
-`assets/popup.png` 是在 **Microsoft Edge** 里加载 `dist/` 后渲染 `popup.html` 得到的（11 款时期），图里可以看到：
-
-- 面板标题、刷新按钮、设置按钮
-- 状态栏（截图瞬间显示"刷新中…"，说明脚本已在执行自动抓取）
+- 面板标题「二游日历」、刷新按钮、设置按钮
+- 状态栏「数据：联网数据 · 成功 21/23」与抓取结论行
 - 游戏行：原神、崩坏：星穹铁道、绝区零、鸣潮……，每行为「卡池 / 起止 / 活动 / 起止」四段结构
-- 页脚「悬停查看池名与时间明细」
+- 页脚「更新：…」与「悬停查看池名与时间明细」
 
-同一轮验证里还确认了：`/json/list` 中扩展的 popup 页面标题就是「二游排期」，
+复现方式：`node tools/make-popup-shot.mjs` 生成离线夹具（Node 真抓一轮拿缓存 → 灌进 chrome 桩），
+再用 `node tools/serve-shot.mjs` 起临时静态服务、浏览器打开 `_shot/popup.html` 截图。
+之所以这么绕：真实扩展里截图要靠 CDP，而 CDP 在本机不通（见下），
+且 Playwright 禁止 `file://`。夹具渲染的是**同一份构建产物**，只是数据来自离线种子。
+
+> 历史截图留在 `assets/popup-old-11games.png`（11 款时期、旧名「二游排期」），仅作对照，勿再引用。
+
+同一轮验证里还确认了：`/json/list` 中扩展的 popup 页面标题就是扩展名，
 且扩展的 service worker 在 `chrome.storage` 下创建了自己的存储目录（即 worker 确实执行了）。
 
 ### 尚未取证的部分及原因
@@ -227,9 +243,9 @@ service worker 正常执行并创建存储目录。所以在受限环境里跑�
 
 在 `edge://extensions` 加载 `dist/` 后：
 
-- [ ] 工具栏出现「二游排期」图标，点击能弹出面板
+- [ ] 工具栏出现「二游日历」图标，点击能弹出面板
 - [ ] 面板显示条目行（默认 **23 行**：28 款减去 5 款出厂默认隐藏）
-- [ ] 顶部显示「数据：联网数据 · 成功 N/11」（首次打开会自动抓一轮，约 5～15 秒）
+- [ ] 顶部显示「数据：联网数据 · 成功 N/28」（首次打开会自动抓一轮，约 5～15 秒）
 - [ ] 卡池列显示角色名（如原神「菲林斯、伊涅芙」），**悬停**能看到池名与时间
 - [ ] 起止列显示「还剩 X 天 X 小时 X 分钟」倒计时
 - [ ] 点右上角齿轮能打开设置页；设置页「开始自检」能跑出报告
