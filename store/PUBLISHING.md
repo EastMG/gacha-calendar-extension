@@ -45,8 +45,9 @@ https://eastmg.github.io/gacha-calendar-extension/privacy.html
 https://eastmg.github.io/gacha-calendar-extension/
 ```
 
-> 若 Pages 尚未启用：仓库 **Settings → Pages → Source 选 `Deploy from a branch` → 分支 `main`、目录 `/docs` → Save**。
-> 等 1~2 分钟后上面的 URL 即可访问（启用后本仓库的推送会自动更新它）。
+> ✅ **Pages 已启用并实测可用**（`main` 分支 `/docs` 目录，2026-10-05 验证两个 URL 均返回 HTTP 200）。
+> 之后改 `docs/` 下的文件，推送后自动更新，无需再动设置。
+> 若哪天需要重新启用：仓库 **Settings → Pages → Source 选 `Deploy from a branch` → 分支 `main`、目录 `/docs` → Save**。
 
 ---
 

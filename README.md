@@ -277,7 +277,7 @@ service worker 正常执行并创建存储目录。所以在受限环境里跑�
 | 首次上架分步清单 | `store/PUBLISHING.md` |
 | 徽标 300×300 / 促销磁贴 440×280、1400×560 | `store/assets/` |
 | 商店截图 ×3（1280×800） | `store/screenshots/` |
-| 隐私政策（GitHub Pages） | `docs/privacy.html` → <https://eastmg.github.io/gacha-calendar-extension/privacy.html> |
+| 隐私政策（GitHub Pages，已启用并实测 200） | `docs/privacy.html` → <https://eastmg.github.io/gacha-calendar-extension/privacy.html> |
 | 自动发布脚本 | `tools/edge-publish.mjs` |
 
 ### 本地先查一遍
