@@ -1,0 +1,7 @@
+The extension's function is to fetch publicly available banner/event information from each game's official announcement pages and community wikis, so it needs access to those source sites. Browsers require an extension to statically declare its target domains before making cross-origin requests, which is why these domains are listed individually in the manifest.
+
+Key points:
+1) It does NOT request <all_urls>, and holds no wildcard/all-web access. Only the specific domains that are actually fetched are declared.
+2) These domains belong to the official announcement pages and community wikis (Bwiki, PRTS, FZ Wiki, GameKee, Bestdori, and others) of games such as Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Arknights, Blue Archive, Uma Musume Pretty Derby, and Fate/Grand Order.
+3) Requests are used solely to read public page content; no user data is sent to these sites.
+4) The extension contains no content script, so it does not read or modify any web page the user is browsing.

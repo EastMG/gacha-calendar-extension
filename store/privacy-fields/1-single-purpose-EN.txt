@@ -1,0 +1,1 @@
+The single purpose of this extension is to let users view, in one place, the currently running banners and events of multiple anime-style mobile games — together with their start and end times — without opening each game's official website one by one.
