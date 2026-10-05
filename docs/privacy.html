@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>二游日历 · 隐私政策</title>
+		<style>
+			:root { color-scheme: light dark; }
+			body {
+				margin: 0 auto; max-width: 780px; padding: 40px 20px 80px;
+				font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+				line-height: 1.75; color: #1e293b; background: #f8fafc;
+			}
+			h1 { font-size: 28px; margin: 0 0 6px; color: #0f172a; }
+			.meta { color: #64748b; font-size: 14px; margin: 0 0 28px; }
+			h2 { font-size: 19px; margin: 30px 0 10px; color: #0f172a; }
+			p, li { font-size: 15px; }
+			ul { padding-left: 22px; }
+			code { background: #e2e8f0; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+			.box { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 18px 0; }
+			.box.lead { border-color: #93c5fd; background: #eff6ff; }
+			a { color: #2563eb; }
+			footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid #e2e8f0; font-size: 13px; color: #64748b; }
+			@media (prefers-color-scheme: dark) {
+				body { background: #0f172a; color: #cbd5e1; }
+				h1, h2 { color: #f1f5f9; }
+				.box { background: #1e293b; border-color: #334155; }
+				.box.lead { background: #1e3a5f; border-color: #3b82f6; }
+				code { background: #334155; }
+				footer { border-color: #334155; color: #94a3b8; }
+				.meta { color: #94a3b8; }
+			}
+		</style>
+	</head>
+	<body>
+		<h1>二游日历 · 隐私政策</h1>
+		<p class="meta">适用于浏览器扩展「二游日历」（Microsoft Edge / Google Chrome）。最后更新：2026-10-05</p>
+
+		<div class="box lead">
+			<strong>一句话总结：本扩展不收集、不上传、不共享你的任何个人数据。</strong>
+			它没有账号系统、没有开发者服务器、不含统计分析或广告代码，也不会注入或修改任何网页。
+		</div>
+
+		<h2>1. 我们收集哪些数据</h2>
+		<p><strong>不收集任何个人数据。</strong>具体而言，本扩展不会收集、记录或传输：</p>
+		<ul>
+			<li>姓名、邮箱、电话等身份信息（本扩展没有注册或登录功能）</li>
+			<li>浏览历史、访问过的网页、点击行为</li>
+			<li>设备标识符、广告标识符、位置信息</li>
+			<li>你输入的任何自定义内容（见第 3 节，它们只保存在你自己的浏览器里）</li>
+		</ul>
+
+		<h2>2. 数据会离开你的浏览器吗</h2>
+		<p>
+			会，但<strong>只发往游戏信息来源站本身，不发给开发者</strong>。本扩展的功能是抓取各游戏官方公告页与社区
+			Wiki（如 Bwiki、PRTS、FZ Wiki、GameKee、Bestdori 等）上的公开活动/卡池信息。为此，你的浏览器会直接
+			向这些站点发起 HTTPS 请求。
+		</p>
+		<p>
+			这些请求与你在浏览器里直接打开该网站没有本质区别：请求头中带有标准的浏览器
+			<code>User-Agent</code> 与来源站的 <code>Referer</code>，但<strong>不包含任何由本扩展生成的用户标识，
+			也不包含你的浏览历史或本扩展的设置</strong>。开发者不运营任何接收这些请求的服务器，因此开发者无法看到
+			这些请求的内容或你的使用情况。
+		</p>
+		<p>
+			这些来源站对这些请求的处理受<strong>各自网站的隐私政策</strong>约束，与本政策无关。
+		</p>
+
+		<h2>3. 保存在你本地的数据</h2>
+		<p>
+			为了让它正常工作，本扩展使用浏览器提供的 <code>chrome.storage.local</code> 在本机保存两类信息。
+			这些数据仅存储在你的设备上，<strong>不会同步、不会上传</strong>：
+		</p>
+		<ul>
+			<li><strong>偏好设置</strong>：哪些游戏条目需要展示、条目顺序、卡池/活动来源的选择、刷新频率，以及你手动填写的自定义来源地址（如有）。</li>
+			<li><strong>抓取结果缓存</strong>：最近一次成功抓取到的卡池与活动内容，用于在网络异常或来源站限流时显示上次的数据。</li>
+		</ul>
+		<p>卸载扩展或在浏览器中清除扩展数据，即可删除上述全部信息。</p>
+
+		<h2>4. 权限用途说明</h2>
+		<ul>
+			<li>
+				<code>storage</code>：仅用于在本机保存第 3 节所述的偏好设置与缓存。
+			</li>
+			<li>
+				<strong>主机访问权限（host_permissions）</strong>：本扩展在清单中<strong>逐个列出</strong>了它所访问的
+				游戏信息来源域名，<strong>没有申请 <code>&lt;all_urls&gt;</code> 或任何通配的全网访问权限</strong>。
+				浏览器要求扩展在发起跨域请求前静态声明目标域名，因此这些声明是抓取功能的必要前提。
+			</li>
+		</ul>
+		<p>
+			本扩展<strong>不包含内容脚本（content script）</strong>，因此不会读取或修改你正在浏览的任何网页内容；
+			也不使用 <code>declarativeNetRequest</code> 等网络拦截能力。
+		</p>
+
+		<h2>5. 数据共享与出售</h2>
+		<p>不共享、不出售、不转让任何数据 —— 因为我们根本不收集数据。</p>
+
+		<h2>6. 儿童隐私</h2>
+		<p>本扩展不收集任何用户数据，因此不涉及儿童个人信息的收集与处理。</p>
+
+		<h2>7. 政策变更</h2>
+		<p>
+			若本政策发生变更，我们会更新本页面顶部的"最后更新"日期。由于本扩展不收集数据，预期不会出现实质性的政策变化。
+		</p>
+
+		<h2>8. 联系方式</h2>
+		<p>
+			如有疑问，请通过项目仓库的 Issues 页面联系我们：
+			<a href="https://github.com/EastMG/gacha-calendar-extension/issues">github.com/EastMG/gacha-calendar-extension/issues</a>
+		</p>
+
+		<footer>
+			开源项目：<a href="https://github.com/EastMG/gacha-calendar-extension">EastMG/gacha-calendar-extension</a>
+			· 抓取核心 <a href="https://www.npmjs.com/package/gacha-calendar-core">gacha-calendar-core</a>
+		</footer>
+	</body>
+</html>

@@ -24,4 +24,4 @@ _hprof*
 _*.mjs
 
 # 面板截图夹具（tools/make-popup-shot.mjs 生成）
-_shot/
+_lab/

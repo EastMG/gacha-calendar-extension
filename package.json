@@ -15,6 +15,11 @@
     "test:domains": "node tools/test-domain-guard.mjs",
     "test:meta": "node tools/test-entry-meta.mjs",
     "test:options": "node tools/test-options.mjs",
+    "store:check": "node tools/check-listing.mjs",
+    "store:assets": "node tools/make-store-assets.mjs",
+    "store:serve": "node tools/serve-shot.mjs 8899",
+    "store:publish": "node tools/edge-publish.mjs",
+    "store:dry-run": "node tools/edge-publish.mjs --dry-run",
     "icons": "node make-icons.mjs",
     "zip": "node build.mjs --zip"
   },

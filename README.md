@@ -91,14 +91,19 @@ tools/check-domains.mjs    来源域名守卫（已并入 verify.mjs，每次提
 tools/test-domain-guard.mjs   域名守卫自测
 tools/test-entry-meta.mjs     来源显示名口径自测
 tools/test-options.mjs        设置页行为自测（DOM shim）
-tools/make-popup-shot.mjs     生成面板截图夹具（真抓一轮 + chrome 桩）
-tools/serve-shot.mjs          临时静态服务（给截图夹具用；Playwright 禁 file://）
-tools/verify-zip.mjs          release zip 自校验（自己解压 + 核 CRC32）
+tools/make-store-assets.mjs   生成离线渲染夹具 + 商店素材（徽标/推广图/截图数据）
+tools/icon-art.mjs            图标绘制与 PNG 编码（扩展图标与商店徽标共用同一份）
+tools/serve-shot.mjs          临时静态服务（给夹具截图用；Playwright 禁 file://）
+tools/verify-zip.mjs          release zip 自校验（自己解压 + 核 CRC32；也可当模块调用）
+tools/check-listing.mjs       商店文案与素材的硬性限制校验（字数、图片尺寸精确匹配）
+tools/edge-publish.mjs        自动发布到 Edge 加载项商店（官方 Update API v1.1）
+store/                        上架资料：逐字段文案、素材、首次上架分步清单
+docs/                         GitHub Pages 站点（隐私政策 + 落地页）
 build.mjs              构建（内联 core + 校验清单 + 打包 zip）
 verify.mjs             静态校验
 verify-live.mjs        端到端校验（真网络抓 28 款 + 渲染模型）
 make-icons.mjs         生成图标（Node 内置 zlib 手写 PNG，字节可复现）
-.githooks/pre-commit   提交守卫：BOM 检查 + build + verify
+.githooks/pre-commit   提交守卫：BOM 检查 + build + verify + 商店文案校验
 ```
 
 ## 设计要点（改动前请先读）
@@ -251,14 +256,46 @@ service worker 正常执行并创建存储目录。所以在受限环境里跑�
 - [ ] 点右上角齿轮能打开设置页；设置页「开始自检」能跑出报告
 - [ ] 切换某项的「展示」后，回到面板该行消失
 
-## 上架商店前的待办
+## 上架 Microsoft Edge 加载项商店
 
-- [ ] 截图：`assets/` 下需放 1280×800 或 640×400 的商店截图（本仓库尚未提供）
-- [ ] 隐私说明：本扩展**不收集任何个人数据**；所有请求由用户浏览器直接发往来源站。
-      商店要求一个可公开访问的隐私政策 URL（可用仓库内的 `PRIVACY.md` 配合 GitHub Pages）
-- [ ] 主渠道建议 **Edge 加载项商店**（中国大陆可访问；Chrome 网上应用店不可直连），
-      配 ZIP/CRX 手动加载兜底
-- [ ] 版本号规则：`manifest.json` 与 `package.json` 必须一致（`build.mjs` 会强制校验）
+**现状：尚未上架**（开发者账号未注册）。上架所需的一切已备好，**首次提交必须人工**，之后每次发版可全自动。
+
+### 为什么首次不能自动化
+
+官方 Update REST API **只能更新已存在的产品**，没有"创建新产品"和"修改商店元数据"的端点：
+
+> "There aren't REST API endpoints for: Creating a new product. Updating a product's metadata,
+> such as the description." —— [官方文档](https://learn.microsoft.com/zh-cn/microsoft-edge/extensions-chromium/publish/api/using-addons-api)
+
+所以流程是：**首次**你在 Partner Center 网页完成注册与提交；**之后**用 `node tools/edge-publish.mjs` 一条命令发版。
+
+### 已备好的东西
+
+| 项目 | 位置 |
+|---|---|
+| 逐字段可粘贴的商店文案 | `store/listing-zh-CN.md`（说明 654 字符、搜索词 5 个、权限理由、单一用途、认证说明） |
+| 首次上架分步清单 | `store/PUBLISHING.md` |
+| 徽标 300×300 / 促销磁贴 440×280、1400×560 | `store/assets/` |
+| 商店截图 ×3（1280×800） | `store/screenshots/` |
+| 隐私政策（GitHub Pages） | `docs/privacy.html` → <https://eastmg.github.io/gacha-calendar-extension/privacy.html> |
+| 自动发布脚本 | `tools/edge-publish.mjs` |
+
+### 本地先查一遍
+
+```bash
+npm run store:check      # 文案字数 + 素材尺寸是否踩到商店硬性限制
+npm run store:assets     # 重新生成离线夹具与商店素材（会真网络抓一轮）
+npm run store:dry-run    # 校验凭据/包/URL，不发任何请求
+npm run store:publish    # 上传 + 发布（需 EDGE_CLIENT_ID / EDGE_API_KEY / EDGE_PRODUCT_ID）
+```
+
+> `store:check` 已接入提交钩子 —— 文案字数或图片尺寸不符时，提交会被拦下。
+> 这些限制原本只在 Partner Center 表单里才会被拒，来回成本很高。
+
+### 版本号规则
+
+`manifest.json` 与 `package.json` 必须一致（`build.mjs` 强制校验）；
+上传的版本号还必须**大于商店里的现有版本**，否则 API 返回 400。
 
 ## 许可
 

@@ -50,6 +50,13 @@ if [ -z "$skip" ]; then
 			echo "       node tools/check-domains.mjs       # 只看来源域名覆盖" >&2
 			fail=1
 		fi
+		# 商店文案与素材的硬性限制（字数、图片尺寸）只在提交时才会被拒绝，
+		# 本地先查一遍，省得在 Partner Center 表单里逐项被驳
+		if ! node tools/check-listing.mjs >/dev/null 2>&1; then
+			echo "ERROR: node tools/check-listing.mjs 未通过（商店文案字数 / 素材尺寸不符 Edge 加载项商店限制）。Commit blocked." >&2
+			echo "  Fix: node tools/check-listing.mjs      # 看是哪一项" >&2
+			fail=1
+		fi
 	else
 		echo "WARN: 未找到 node，跳过构建与校验" >&2
 	fi
