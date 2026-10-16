@@ -24,7 +24,21 @@
 | 第 4 步 属性（Properties） | ✅ 已完成 |
 | 第 5 步 隐私（Privacy） | ✅ 已完成 |
 | 第 6 步 Store 一览 | ✅ 已完成（**两种语言**，见下） |
-| 第 7 步 认证说明并提交 | ✅ **已提交送审** |
+| 第 7 步 认证说明并提交 | ✅ **已提交送审**（0.2.4） |
+
+### ⏳ 待办：0.2.5 已备好，等审核结束再提交
+
+送审的是 **0.2.4（core 0.11.1）**。之后 core 升到 **0.12.0**，仓库里已构建好 **0.2.5**：
+
+- `release/gacha-calendar-extension-0.2.5.zip`（15 文件，zip 自校验通过）
+- 全链校验通过：build / verify / check-listing / 三个自测
+- **扩展代码零改动**：core 0.12.0 的公开接口（`listGames` / `getCached` / `refresh` /
+  `selfCheck` / `__test`）与权限域名都与 0.11.1 一致，只有来源健康度与新增的
+  `gameColors` / `newPanel`（DSH 插件面板专用）变化
+- 顺带修掉文案里过时的来源名（Bestdori 已从主源降为 Bandori 的备选源，从示例列表里去掉）
+
+> ⚠️ **不要在「In review」期间重复提交**：那会让当前审核作废或排队，得不偿失。
+> **等 0.2.4 审核通过后**，再按下面的「第 9 步」把 0.2.5 发上去（一条命令）。
 
 **当前状态：`In review`** —— 版本 **0.2.4**，语言 **Chinese (China) + English**，
 官方提示最多 7 个工作日。左侧导航出现 **Update / Cancel submission** 即为已送审。

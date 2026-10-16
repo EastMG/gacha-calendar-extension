@@ -5,7 +5,7 @@
 
 ## Description（必填，250 ~ 10000 字符）
 
-当前字数：1738 字符。
+当前字数：1728 字符。
 
 ```
 "Gacha Calendar" collects the currently running banners and events of 28 anime-style mobile games into one place.
@@ -22,7 +22,7 @@ Features:
 - Configurable refresh interval (daily by default) to avoid hammering the source sites
 - Built-in parser self-check that reports which source failed, if any
 
-Data comes from official announcements and community wikis (Bwiki, PRTS, FZ Wiki, GameKee, Bestdori and others). All requests go directly from your browser to those sites. This extension does not collect or upload any personal data, contains no analytics or ads, and does not inject into or modify any web page.
+Data comes from official announcements and community wikis (Bwiki, PRTS, FZ Wiki, GameKee and others). All requests go directly from your browser to those sites. This extension does not collect or upload any personal data, contains no analytics or ads, and does not inject into or modify any web page.
 ```
 
 ## Search terms（最多 7 个，合计 ≤21 字，每个 ≤30 字符）
