@@ -14,6 +14,28 @@
 
 ---
 
+## 当前进度（2026-10-05）
+
+| 步骤 | 状态 |
+|---|---|
+| 注册开发者账号 | ✅ 已完成 |
+| 第 2 步 创建扩展并上传包 | ✅ 已完成 |
+| 第 3 步 可用性（Availability） | ✅ 已完成 |
+| 第 4 步 属性（Properties） | ✅ 已完成 |
+| 第 5 步 隐私（Privacy） | ✅ 已完成 |
+| **第 6 步 Store 一览** | ⏳ **进行中** —— 注意「en-US 语言识别」的坑，见该节 |
+| 第 7 步 认证说明并提交 | ⬜ 待做 |
+
+**Product ID**（自动化发版用，已从 Partner Center 地址栏取得）：
+
+```
+d77ac990-6ec5-4760-a155-a4e41ee4f6f7
+```
+
+> 这不是密钥，公开也不致命（上架后它会出现在商店页 URL 里）。真正的密钥是 API Key，只在你手里。
+
+---
+
 ## 第 0 步：准备（已完成，无需操作）
 
 | 项目 | 状态 |
@@ -112,23 +134,45 @@ https://eastmg.github.io/gacha-calendar-extension/
 
 ---
 
-## 第 6 步：Store 一览（每种语言）
+## 第 6 步：Store 一览（**两种语言都要填**）
 
-1. 语言至少要有 **`zh-CN`**（1 种即可提交）
-2. **说明**：粘贴 `store/listing-zh-CN.md` 的「二、说明」代码块（654 字符，下限 250）
-3. **扩展徽标**：上传 `store/assets/logo-300.png`
-4. **屏幕截图**：上传 `store/screenshots/` 里的 3 张（顺序建议 01 → 02 → 03）
-5. **小型/大型促销磁贴**（可选）：上传 `store/assets/promo-small-440x280.png` 与 `promo-large-1400x560.png`
-6. **搜索词**：粘贴「三、搜索词」的 5 个词
-7. **扩展名称 / 简短说明**：**只读**，来自 manifest，无需也无法在此修改
+> ⚠️ **这一步有个坑**：Partner Center 自动识别的语言是 **English (United States)**，
+> 而不是中文。原因：本扩展的 `manifest.json` 用的是**硬编码中文**、没有 `_locales` 目录，
+> 所以它识别不到任何语言，只能回落到默认的 en-US。
+>
+> 后果：**不能把中文塞进 en-US 那一行** —— 那样国际用户会看到语言标记错乱。
+> 正确做法是**再加一行中文**，两行分别填各自语言的文案。
 
-> 想改名称或简短说明 → 改 `manifest.json` 后重新 `node build.mjs --zip` 并重传包。
+### 操作顺序
+
+1. **Add a language** 下拉 → 选 **Chinese (Simplified)**（中文(简体)）→ 多出一行
+2. 分别点两行的 **Edit details**，按下表填：
+
+| 字段 | **zh-CN** 那行 | **en-US** 那行 |
+|---|---|---|
+| Description | `store/listing-zh-CN.md` 的「二、说明」（**654 字符**） | `store/listing-en-US.md` 的 Description（**1738 字符**） |
+| Extension logo | `store/assets/logo-300.png` | 同上 |
+| Screenshots | `store/screenshots/01-panel.png`、`02-settings.png`、`03-remove-restore.png` | 同上 |
+| Small / Large promo tile（可选） | `store/assets/promo-small-440x280.png`、`promo-large-1400x560.png` | 同上 |
+| Search terms | 二游日历、卡池日历、活动排期、抽卡日历、手游活动 | gacha calendar、banner tracker、anime games、event schedule、gacha timer、game events |
+
+3. **省力技巧**：先填完一行的徽标与截图，字段下方会出现 **Copy** 选项，可一键复制到另一语言，
+   不必重复上传四张图。
+4. **Extension name / Short description 是只读的**（来自 manifest），两行都会自动带出「二游日历」，不用管。
+5. 两行 Status 都变成 **Complete** 后，右上角 **Publish** 才会亮。
+
+> 想改扩展名称或简短说明 → 只能改 `manifest.json`、重新 `node build.mjs --zip`、重传包。
+
+> 📷 截图里的界面是中文的 —— 这是**如实反映**产品当前只提供中文界面，不需要为此改图或做英文截图。
+
 
 ---
 
 ## 第 7 步：认证说明并提交
 
-1. 点右上角 **发布**，在 **认证说明** 里粘贴 `store/listing-zh-CN.md` 的「4.6 认证测试说明」
+1. 点右上角 **发布**，在 **认证说明** 里粘贴：
+   - 中文：`store/privacy-fields/5-认证说明.txt`
+   - （可选）英文：`store/privacy-fields/5-certification-notes-EN.txt`
 2. 再点 **发布** 提交
 3. 进入认证：官方说明**最多 7 个工作日**
 4. 通过后自动上架，状态变为「在 Microsoft Store 中」
@@ -142,6 +186,40 @@ https://eastmg.github.io/gacha-calendar-extension/
 | 数据披露与隐私政策不一致 | 第 5 步勾选项与 `docs/privacy.html` 内容是否矛盾 |
 
 > 说明：本扩展无内容脚本、无 `<all_urls>`、无远程代码、无数据收集，属于审核面上比较干净的一类。
+
+> 💡 **发给审核员的字段建议中英各贴一份**（第 5 步与第 7 步都适用）。审核方多半读英文，
+> 中英并排能显著降低"看不懂而误判"的风险。`store/privacy-fields/` 下两种语言都备好了。
+
+---
+
+## 上架通过后：请看这里
+
+通过后有三件事，前两件一次性、第三件长期有效。
+
+### ① 立刻能做的：确认商店页正常
+
+- 打开商店页，检查：名称「二游日历」、徽标、3 张截图、说明（中英两版）、隐私政策链接可点开
+- 用一台干净的浏览器实际装一次，确认「加载项商店」装出来的版本能正常抓数据
+  （与本地 `dist/` 手动加载不是同一条路径，值得单独验一次）
+
+### ② 一次性：生成 API 凭据（见第 8 步）→ 然后**真跑一次上传**
+
+拿到凭据后**先不要直接发布**，用 `--upload-only` 验证整条链路：
+
+```powershell
+node tools/edge-publish.mjs --dry-run       # 只校验凭据/包/URL，不发请求
+node tools/edge-publish.mjs --upload-only   # 真上传，但留在草稿里
+```
+
+去 Partner Center 确认草稿里出现了新版本包 → 再决定是否点发布。
+
+> 为什么强调这一步：**上传成功后的轮询逻辑从没被真实端到端验证过**
+> （之前没有凭据，只测到"鉴权失败"分支）。这是目前唯一剩下的未验证路径。
+
+### ③ 长期：每次发版的流程
+
+见下一节「第 9 步」。
+
 
 ---
 
@@ -221,3 +299,32 @@ node tools/edge-publish.mjs --notes "v<版本>：<一句话改动>"
 # 5. 顺手发个 GitHub Release（可选）
 gh release create v<版本> release/gacha-calendar-extension-<版本>.zip --notes-file release/RELEASE_NOTES.md
 ```
+
+---
+
+## 附：本机网络注意事项（实测踩到的）
+
+国内到微软 / GitHub 的链路会间歇性抖动，实测遇到过这些，**都不是代码问题**：
+
+| 现象 | 原因 | 影响 | 应对 |
+|---|---|---|---|
+| `github.com` DNS 解析失败、推送卡住 | 链路抖动 | 提交推不上去 | **提交在本地是安全的**，等几分钟重试即可（实测会恢复） |
+| `eastmg.github.io` 时通时不通 | `*.github.io` 在国内被间歇性 DNS 污染 | 你自己可能打不开隐私政策页 | **不影响上架** —— 微软审核方在境外，能正常访问。要国内也稳定可换托管 |
+| Node 报 `UNABLE_TO_GET_ISSUER_CERT_LOCALLY` 打不开 `partner.microsoft.com` | Node 的证书库问题（本机 git 也踩过同样的 CA 坑） | **只有命令行脚本受影响** | **浏览器不受影响**，注册与填表照常用浏览器做 |
+
+> 所以：**Partner Center 的所有操作都用浏览器**（本清单也是按浏览器写的）。
+> 命令行只用于 `edge-publish.mjs` 发版，而且它打的是 `api.addons.microsoftedge.microsoft.com`
+> —— 那个域名实测**可达**（返回 404/403 都说明链路通）。
+
+### 上架流程里"必须人工"的部分
+
+| 环节 | 能否自动化 | 原因 |
+|---|---|---|
+| 注册开发者账号 | ❌ | 需要你的 Microsoft 身份与（可能的）二次验证 |
+| 创建新产品 | ❌ | 官方 API **没有**该端点（见文首引文） |
+| 修改商店元数据（说明/截图/隐私页） | ❌ | 同上，API 没有 |
+| 首次提交送审 | ❌ | 只能在 Partner Center 点 Publish |
+| **后续每次发版** | ✅ | `node tools/edge-publish.mjs` 一条命令 |
+| 版本包构建与自检 | ✅ | `build.mjs --zip` + `verify-zip.mjs` |
+| 商店文案/素材校验 | ✅ | `node tools/check-listing.mjs`（已接入提交钩子） |
+

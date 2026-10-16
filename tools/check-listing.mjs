@@ -135,7 +135,17 @@ if (fs.existsSync(privacy)) {
 const zh = fs.readFileSync(path.join(ROOT, "store/listing-zh-CN.md"), "utf8");
 check("listing 里给出了隐私政策 URL", /https:\/\/\S*privacy\.html/.test(zh));
 // 审核员看的字段：中英各备一份，降低"审核方读不懂"的风险
-const fields = ["1-单一用途.txt", "1-single-purpose-EN.txt", "2-权限理由-storage.txt", "2-permission-storage-EN.txt", "3-权限理由-主机权限.txt", "3-permission-host-EN.txt", "4-隐私政策URL.txt"];
+const fields = [
+	"1-单一用途.txt",
+	"1-single-purpose-EN.txt",
+	"2-权限理由-storage.txt",
+	"2-permission-storage-EN.txt",
+	"3-权限理由-主机权限.txt",
+	"3-permission-host-EN.txt",
+	"4-隐私政策URL.txt",
+	"5-认证说明.txt",
+	"5-certification-notes-EN.txt"
+];
 for (const f of fields) {
 	const p = path.join(ROOT, "store", "privacy-fields", f);
 	check(`审核字段 ${f}`, fs.existsSync(p) && fs.readFileSync(p, "utf8").trim().length > 0);
