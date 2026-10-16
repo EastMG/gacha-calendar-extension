@@ -65,6 +65,25 @@ const STATIC = [
 	["src/options.css", "options.css"]
 ];
 
+/**
+ * i18n 消息目录：`src/_locales/<locale>/messages.json` → `dist/_locales/...`。
+ *
+ * 为什么必须有：manifest 的 `name` / `description` 用 `__MSG_xxx__` 占位符后，
+ * 浏览器（和商店）靠 `_locales` 才能解析出真实文案；缺了它扩展名会变成字面量 `__MSG_...__`。
+ * 另外 Partner Center **只把包里 `_locales` 存在的语言列为可用的商店一览语言** ——
+ * 这正是"想给商店加中文一览"必须走 i18n 的原因（否则只能填它自动识别的 en-US）。
+ */
+function localeFiles() {
+	const base = path.join(ROOT, "src", "_locales");
+	const out = [];
+	if (!fs.existsSync(base)) return out;
+	for (const locale of fs.readdirSync(base)) {
+		const f = path.join(base, locale, "messages.json");
+		if (fs.existsSync(f)) out.push([f, `_locales/${locale}/messages.json`]);
+	}
+	return out;
+}
+
 const ICON_SIZES = [16, 32, 48, 128];
 
 function ensureDir(dir) {
@@ -132,6 +151,9 @@ function buildArtifacts() {
 		name: manifest.name,
 		version: manifest.version,
 		description: manifest.description,
+		// default_locale 必须显式带上：name/description 是 __MSG_ 占位符，
+		// 缺了它浏览器无法解析（会直接显示 __MSG_...__ 字面量），商店也认不出可用语言。
+		default_locale: manifest.default_locale,
 		icons: manifest.icons,
 		action: manifest.action,
 		options_ui: manifest.options_ui,
@@ -150,6 +172,8 @@ function buildArtifacts() {
 	out.set("core-version.js", `export const CORE_VERSION = ${JSON.stringify(corePkg.version)};\n`);
 	// 静态资源
 	for (const [from, to] of STATIC) out.set(to, fs.readFileSync(path.join(ROOT, from), "utf8"));
+	// i18n 消息（name / description 是 __MSG_ 占位符，靠它解析）
+	for (const [from, to] of localeFiles()) out.set(to, fs.readFileSync(from, "utf8"));
 	return out;
 }
 
@@ -184,7 +208,11 @@ function main() {
 		return;
 	}
 
-	for (const [rel, content] of artifacts) fs.writeFileSync(path.join(DIST, rel), content, "utf8");
+	for (const [rel, content] of artifacts) {
+		// 产物里现在有嵌套路径（_locales/<locale>/messages.json），先建目录
+		ensureDir(path.dirname(path.join(DIST, rel)));
+		fs.writeFileSync(path.join(DIST, rel), content, "utf8");
+	}
 	copyIcons();
 	// 清掉历史遗留的验证产物：`--verify` 曾生成过 verify.js / verify.html，
 	// 正常构建必须把它们删掉，否则会被打进上架包（多余代码 = 审核风险）。

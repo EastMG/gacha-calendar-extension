@@ -1,0 +1,10 @@
+{
+	"extensionName": {
+		"message": "Gacha Calendar",
+		"description": "Extension name (shown in the browser's extension list and on the store page)"
+	},
+	"extensionDescription": {
+		"message": "Current banners and events for 28 anime-style mobile games in one place, with countdowns.",
+		"description": "Short description (shown at the top of the store listing)"
+	}
+}

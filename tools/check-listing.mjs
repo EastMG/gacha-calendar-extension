@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveManifestText } from "./i18n.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -57,11 +58,19 @@ function pngSize(file) {
 // ---------- 1. manifest ----------
 console.log("=== 1. manifest 字段（上传 zip 后自动带出，表单里改不了）===");
 const mf = JSON.parse(fs.readFileSync(path.join(ROOT, "manifest.json"), "utf8"));
-check("扩展名称 ≤ 45 字符", charLen(mf.name) <= 45, `「${mf.name}」${charLen(mf.name)} 字符`);
-check("简短说明（description）≤ 132 字符", charLen(mf.description) <= 132, `${charLen(mf.description)} 字符`);
+// name/description 是 __MSG_ 占位符 → 商店看到的、以及长度限制针对的是**解析后的值**。
+// 注意：源码侧 manifest 在仓库根，而 `_locales` 在 `src/` 下（构建时才拷到 dist/_locales）。
+const resolved = resolveManifestText(mf, path.join(ROOT, "src"));
+check("i18n 占位符可解析", resolved.problems.length === 0, resolved.problems.join("；") || `locale=${resolved.locale}`);
+console.log(`  （解析后）name = 「${resolved.name}」；description = ${charLen(resolved.description)} 字`);
+check("扩展名称 ≤ 45 字符", charLen(resolved.name) <= 45, `「${resolved.name}」${charLen(resolved.name)} 字符`);
+check("简短说明（description）≤ 132 字符", charLen(resolved.description) <= 132, `${charLen(resolved.description)} 字符`);
 check("Manifest V3", mf.manifest_version === 3, `v${mf.manifest_version}`);
 check("未申请 <all_urls>", !mf.host_permissions.includes("<all_urls>") && !mf.host_permissions.includes("*://*/*"));
 check("无内容脚本（content script）", !("content_scripts" in mf), "不读取/修改网页");
+// 商店一等公民：包里声明的语言 = 商店一览可用的语言（缺了就只能填自动识别的 en-US）
+check("声明了可用语言（_locales）", resolved.locales.length > 0, resolved.locales.join(", "));
+check("default_locale 与 _locales 对应", !!mf.default_locale && resolved.locales.includes(mf.default_locale), String(mf.default_locale));
 
 // ---------- 2. 各语言文案 ----------
 for (const L of LISTINGS) {

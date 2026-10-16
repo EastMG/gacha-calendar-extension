@@ -1,0 +1,10 @@
+{
+	"extensionName": {
+		"message": "二游日历",
+		"description": "扩展名称（显示在浏览器扩展列表与商店页）"
+	},
+	"extensionDescription": {
+		"message": "28 款二次元手游的当期卡池与活动起止一览：原神/星穹铁道/绝区零/崩坏3/鸣潮/明日方舟/终末地/蔚蓝档案三服/BanG Dream/赛马娘/重返未来1999 等。",
+		"description": "简短说明（商店一览顶部的短描述）"
+	}
+}

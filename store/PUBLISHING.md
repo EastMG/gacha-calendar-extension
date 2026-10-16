@@ -14,7 +14,7 @@
 
 ---
 
-## 当前进度（2026-10-05）
+## 当前进度（2026-10-16）
 
 | 步骤 | 状态 |
 |---|---|
@@ -23,16 +23,43 @@
 | 第 3 步 可用性（Availability） | ✅ 已完成 |
 | 第 4 步 属性（Properties） | ✅ 已完成 |
 | 第 5 步 隐私（Privacy） | ✅ 已完成 |
-| **第 6 步 Store 一览** | ⏳ **进行中** —— 注意「en-US 语言识别」的坑，见该节 |
-| 第 7 步 认证说明并提交 | ⬜ 待做 |
+| 第 6 步 Store 一览 | ✅ 已完成（**两种语言**，见下） |
+| 第 7 步 认证说明并提交 | ✅ **已提交送审** |
 
-**Product ID**（自动化发版用，已从 Partner Center 地址栏取得）：
+**当前状态：`In review`** —— 版本 **0.2.4**，语言 **Chinese (China) + English**，
+官方提示最多 7 个工作日。左侧导航出现 **Update / Cancel submission** 即为已送审。
 
-```
-d77ac990-6ec5-4760-a155-a4e41ee4f6f7
-```
+**关键标识**：
 
-> 这不是密钥，公开也不致命（上架后它会出现在商店页 URL 里）。真正的密钥是 API Key，只在你手里。
+| 字段 | 值 |
+|---|---|
+| Product ID | `d77ac990-6ec5-4760-a155-a4e41ee4f6f7` |
+| Store ID | `0RDCKFJTD9J2` |
+| CRX ID | `mkfokebcmknjnbjceabimdchdfhbdhhc` |
+
+> Product ID / Store ID 不是密钥，公开也不致命（上架后会出现在商店页 URL 里）。
+> 真正的密钥是 API Key，只在你手里。
+
+### 已解决：语言只有 en-US 的问题
+
+第一次填 Store listings 时发现 **`Add a language` 是禁用的**，只能填 Partner Center 自动识别的
+`English (United States)` —— 因为 `manifest.json` 用的是**硬编码中文**、没有 `_locales`，
+它识别不到任何语言，只能回落到默认 en-US。
+
+**修法（已完成）**：给包加 i18n，让商店能识别中文：
+
+1. 新增 `src/_locales/zh_CN/messages.json` 与 `src/_locales/en/messages.json`
+2. `manifest.json` 的 `name` / `description` 改成 `__MSG_extensionName__` / `__MSG_extensionDescription__`
+   并显式声明 `"default_locale": "zh_CN"`
+3. `build.mjs` 把 `src/_locales/**` 复制进 `dist/_locales/**`（**不能漏**，否则扩展名会显示成字面量 `__MSG_...__`）
+4. 重新上传包 → Partner Center 的「Languages in package」变成 **English, Chinese (China)**，
+   Store listings 自动出现**两行语言**
+
+> ⚠️ 语言列表**严格等于包里 `_locales` 声明的语言**，不能手工添加。
+> 想加语言只能改包（加 `_locales/<locale>/messages.json` 并重传）。
+
+> 📌 改语言后**已填的 Store 一览会被清空**（语言标识从 `en-US` 变成 `English`），
+> 需要重填。所以**语言要一次性定好再填文案**。
 
 ---
 
@@ -158,6 +185,13 @@ https://eastmg.github.io/gacha-calendar-extension/
 
 3. **省力技巧**：先填完一行的徽标与截图，字段下方会出现 **Copy** 选项，可一键复制到另一语言，
    不必重复上传四张图。
+
+   > 实测补充：「Duplicate this logo / these screenshots / this promotional tile for all languages」
+   > 出现在**已经有该素材的那一行**。所以流程是：先把**中文行**的图传全 → 打开中文行点这 4 个复制链接
+   > → 图片就同步到英文行了（每点一次会弹确认框，点确认即可）。**不必在英文行重复上传。**
+   >
+   > 另外「Screenshot/s」的 **Add Image 是个自定义元素**（不是普通 `<button>`），
+   > 点它会弹系统文件选择框，一次只能加一张，加完可再点继续加（最多 6 张）。
 4. **Extension name / Short description 是只读的**（来自 manifest），两行都会自动带出「二游日历」，不用管。
 5. 两行 Status 都变成 **Complete** 后，右上角 **Publish** 才会亮。
 
@@ -170,12 +204,25 @@ https://eastmg.github.io/gacha-calendar-extension/
 
 ## 第 7 步：认证说明并提交
 
-1. 点右上角 **发布**，在 **认证说明** 里粘贴：
+1. 点右上角 **发布** → 进入 **Submit your extension** 页
+2. **先回答单选**：「Does a tester need credentials…?」→ 选
+   **「No, testers can access and test all functionality without any additional info」**
+   （本扩展无需登录，这是如实回答）
+3. **再填认证说明**（上限 2000 字符）：
    - 中文：`store/privacy-fields/5-认证说明.txt`
-   - （可选）英文：`store/privacy-fields/5-certification-notes-EN.txt`
-2. 再点 **发布** 提交
-3. 进入认证：官方说明**最多 7 个工作日**
-4. 通过后自动上架，状态变为「在 Microsoft Store 中」
+   - 英文：`store/privacy-fields/5-certification-notes-EN.txt`
+   - 两段合并约 **1873 字符**，正好放得下（合并顺序：中文在前、英文在后，中间用 `---` 分隔）
+4. 点 **Publish** 提交 → 回到扩展概览页，状态变为 **In review**
+5. 官方说明**最多 7 个工作日**；通过后自动上架
+
+### ⚠️ 这一页有两个反直觉的坑（实测踩到）
+
+| 现象 | 原因 / 正确做法 |
+|---|---|
+| 认证说明框是**灰的（readonly）填不进去** | 这是 Angular 重渲染的临时状态。**刷新页面**即可编辑 |
+| 改单选后，**刚填的说明被清空** | 表单在选项变化时会重置说明 → **必须"先定单选、再填说明"**；顺序反了就白填 |
+
+> 顺序口诀：**先选 No → 再填说明 → 直接 Publish**。中途别再去动那个单选。
 
 ### 被拒时优先检查这三项
 

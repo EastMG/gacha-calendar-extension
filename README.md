@@ -79,6 +79,7 @@ MV3 **禁止远程代码**（不能从 CDN 取代码），所以 `gacha-calendar
 
 ```
 manifest.json          MV3 清单（权限最小化：只申请 storage + 精确域名）
+src/_locales/          i18n 消息（zh_CN / en）——**商店据此识别可用语言，不能删**
 src/background.js      service worker：白名单代发跨域请求（唯一的"代理"）
 src/transport.js       core 需要的 transport：直连 + 经 background 代发
 src/storage.js         core 需要的 storage：chrome.storage.local 封装
@@ -91,6 +92,8 @@ tools/check-domains.mjs    来源域名守卫（已并入 verify.mjs，每次提
 tools/test-domain-guard.mjs   域名守卫自测
 tools/test-entry-meta.mjs     来源显示名口径自测
 tools/test-options.mjs        设置页行为自测（DOM shim）
+tools/i18n.mjs                i18n 消息解析（校验 __MSG_ 能否解析成真实文案）
+tools/probe-i18n.mjs          真实浏览器验证 i18n 已解析（查 profile 里是否出现真名）
 tools/make-store-assets.mjs   生成离线渲染夹具 + 商店素材（徽标/推广图/截图数据）
 tools/icon-art.mjs            图标绘制与 PNG 编码（扩展图标与商店徽标共用同一份）
 tools/serve-shot.mjs          临时静态服务（给夹具截图用；Playwright 禁 file://）
@@ -107,6 +110,24 @@ make-icons.mjs         生成图标（Node 内置 zlib 手写 PNG，字节可复
 ```
 
 ## 设计要点（改动前请先读）
+
+### 0. i18n：`_locales` 既是给浏览器用的，也是给商店用的
+
+`manifest.json` 的 `name` / `description` 是 `__MSG_extensionName__` / `__MSG_extensionDescription__`
+占位符，靠 `src/_locales/<locale>/messages.json` 解析，并显式声明 `"default_locale": "zh_CN"`。
+
+**为什么不能省**：除了浏览器要靠它解析扩展名，**Edge 商店也只把包里 `_locales` 声明的语言
+列为可用的商店一览语言**。最早没有 `_locales`（硬编码中文）时，Partner Center 只认出
+`English (United States)`，于是只能把中文塞进 en-US 那一行；补上 i18n 后它才显示
+**Chinese (China) + English** 两行语言。
+
+改动注意：
+
+- 新增语言 → 加 `src/_locales/<locale>/messages.json`，然后**重传包**；语言列表不能手工加
+- `build.mjs` 会把 `src/_locales/**` 复制到 `dist/_locales/**`。漏了这步，扩展名会直接
+  显示成字面量 `__MSG_extensionName__`（`verify.mjs` 与 `tools/check-listing.mjs` 都会拦）
+- 验证真实浏览器里确实解析成功：`node tools/probe-i18n.mjs`（加载扩展后查 profile 里
+  是否出现真实名称、以及**是否出现未解析的占位符**）
 
 ### 1. core 的 transport 契约（**最容易踩的坑**）
 

@@ -15,6 +15,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { analyzeDomains } from "./tools/check-domains.mjs";
+import { resolveManifestText } from "./tools/i18n.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(ROOT, "dist");
@@ -41,10 +42,20 @@ if (!fs.existsSync(manifestPath)) {
 }
 const mf = readJson(manifestPath);
 
+// name / description 在源 manifest 里是 `__MSG_xxx__` 占位符 —— 这本身合法，
+// 浏览器会用包内 `_locales` 解析。真正要拦的是"**解析不出来**"：
+// 缺 _locales、缺 default_locale、或键名写错，都会让扩展名变成字面量 `__MSG_...__`。
+const mfText = resolveManifestText(mf, DIST);
 check("manifest_version === 3", mf.manifest_version === 3, String(mf.manifest_version));
-check("name 非空且不含占位符", typeof mf.name === "string" && mf.name.length > 0 && !mf.name.includes("__MSG_"), mf.name);
+check(
+	"name / description 的 i18n 占位符可解析",
+	mfText.problems.length === 0,
+	mfText.problems.length ? mfText.problems.join("；") : `locale=${mfText.locale}，可用 ${mfText.locales.join("/") || "—"}`
+);
+check("name 非空", mfText.name.length > 0, mfText.name);
 check("version 是合法扩展版本号", /^\d+(\.\d+){0,3}$/.test(mf.version), mf.version);
-check("description 长度 ≤ 132", typeof mf.description === "string" && mf.description.length <= 132, `${(mf.description || "").length} 字`);
+check("description 长度 ≤ 132（解析后）", mfText.description.length <= 132, `${mfText.description.length} 字`);
+check("包里带 _locales 目录（商店据此识别可用语言）", mfText.locales.length > 0, mfText.locales.join(", "));
 check("action.default_popup 存在", !!(mf.action && mf.action.default_popup), mf.action && mf.action.default_popup);
 check("background.service_worker 存在", !!(mf.background && mf.background.service_worker), mf.background && mf.background.service_worker);
 check("background.type === module", !mf.background || mf.background.type === "module", mf.background && mf.background.type);
