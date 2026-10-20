@@ -7,9 +7,11 @@
 // shim 只实现 options.js 实际用到的 API；DOM 不完整，但足够覆盖增删改的逻辑路径。
 import fs from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
-const ROOT = "F:/DeepSeek/DeepSeek-Workplace/DSH-Workplace-01/gacha-calendar-extension";
+// 仓库根目录：从本文件位置推导，**不要写死绝对路径** ——
+// 写死会让别人 clone 之后本测试直接跑不起来，且会把本机目录结构泄漏进公开仓库。
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 // ---------- 极简 DOM ----------
 class El {

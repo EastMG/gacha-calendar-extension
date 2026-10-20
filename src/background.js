@@ -8,7 +8,7 @@
 // 而 background service worker 凭 manifest 的 host_permissions 可以真正跨域，
 // 并且能自行设置 Referer / Origin —— 这两点正是抓这些站所必需的。
 //
-// 安全红线（交接文档 §8）：**必须保留主机白名单**。没有它，本 worker 就是一个
+// 安全红线：**必须保留主机白名单**。没有它，本 worker 就是一个
 // "任意内网地址请求器"（SSRF）；而且必须校验消息来源（sender），
 // 否则任何网页都能通过消息桥驱使扩展去请求任意地址。
 

@@ -67,7 +67,7 @@ node build.mjs --zip # 额外打出 release/*.zip（用于提交商店）
 > `git config core.hooksPath .githooks`。单次跳过用 `DSH_SKIP_VERIFY=1 git commit ...`。
 >
 > Windows 上若 `git push` 报 `error setting certificate verify locations`，是 CA 路径没配：
-> `git config http.sslCAInfo "D:/Program Files/Git/mingw64/ssl/certs/ca-bundle.crt"`（按本机实际路径改）。
+> `git config http.sslCAInfo "<你的 Git 安装目录>/mingw64/ssl/certs/ca-bundle.crt"`。
 
 ### 为什么必须构建
 
@@ -145,16 +145,17 @@ transport = {
 
 ### 2. 为什么必须经 background 代发
 
-实测 22 个主来源域名里，只有 **4 个**回 `access-control-allow-origin`
-（`aki-gm-resources-back.aki-game.com`、`api-takumi-static.mihoyo.com`、
-`api-web.bluearchive.jp`、`sekai-world.github.io`）；其余 **18 个**
-（Bwiki / canmoe / fz.wiki / 万美 / 蔚蓝国服 / Nexon / GameKee / 赛马娘 / FGO / p5x /
-少前2 / 1999 / 崩坏3 等）**没有 ACAO**，浏览器在页面上下文里会直接拦掉。
-而 service worker 凭 `host_permissions` 可以真正跨域，并能自行设置 `Referer` / `Origin`。
+约 **六成**的来源站在响应里**没有** `access-control-allow-origin`（如 Bwiki / canmoe /
+fz.wiki / 万美 / 蔚蓝国服 / Nexon / GameKee / 赛马娘 / FGO / p5x / 少前2 / 1999 / 崩坏3 等），
+浏览器在页面上下文里会直接拦掉这类跨域请求；而 service worker 凭 `host_permissions`
+可以真正跨域，并能自行设置 `Referer` / `Origin`。只有少数站（如
+`api-takumi-static.mihoyo.com`、`api-web.bluearchive.jp`、`sekai-world.github.io`）
+放行 CORS，那些可以直连。
 
-> 这条数字随 core 换来源而变，所以别照抄旧值。复测方法：对每个主来源域名发一次请求，
-> 看响应有没有 `access-control-allow-origin`。core 抓取域名共 **43** 个
-> （另有 6 个仅用于 `<img>` 图标），完整清单见 `manifest.host_permissions`。
+> 具体比例随 core 换来源而变，**不要照抄数字**。复测方法：对每个主来源域名发一次请求，
+> 看响应有没有 `access-control-allow-origin`。当前 core 的抓取域名与图标域名清单，
+> 以 `npm run verify:domains` 的输出为准（守卫会打印三个数字并逐一比对），
+> 完整授权清单见 `manifest.host_permissions`。
 
 ### 3. 安全红线与来源域名守卫
 
@@ -231,12 +232,10 @@ npm run test:options       # 设置页行为（用极简 DOM shim 在 Node 里�
 - 游戏行：原神、崩坏：星穹铁道、绝区零、鸣潮……，每行为「卡池 / 起止 / 活动 / 起止」四段结构
 - 页脚「更新：…」与「悬停查看池名与时间明细」
 
-复现方式：`node tools/make-popup-shot.mjs` 生成离线夹具（Node 真抓一轮拿缓存 → 灌进 chrome 桩），
-再用 `node tools/serve-shot.mjs` 起临时静态服务、浏览器打开 `_shot/popup.html` 截图。
+复现方式：`node tools/make-store-assets.mjs` 生成离线夹具（Node 真抓一轮拿缓存 → 灌进 chrome 桩），
+再用 `node tools/serve-shot.mjs` 起临时静态服务、浏览器打开 `_lab/popup.html` 截图。
 之所以这么绕：真实扩展里截图要靠 CDP，而 CDP 在本机不通（见下），
 且 Playwright 禁止 `file://`。夹具渲染的是**同一份构建产物**，只是数据来自离线种子。
-
-> 历史截图留在 `assets/popup-old-11games.png`（11 款时期、旧名「二游排期」），仅作对照，勿再引用。
 
 同一轮验证里还确认了：`/json/list` 中扩展的 popup 页面标题就是扩展名，
 且扩展的 service worker 在 `chrome.storage` 下创建了自己的存储目录（即 worker 确实执行了）。
@@ -279,23 +278,28 @@ service worker 正常执行并创建存储目录。所以在受限环境里跑�
 
 ## 上架 Microsoft Edge 加载项商店
 
-**现状：尚未上架**（开发者账号未注册）。上架所需的一切已备好，**首次提交必须人工**，之后每次发版可全自动。
+**现状：已上架** —— [Edge 加载项商店页](https://microsoftedge.microsoft.com/addons/detail/mkfokebcmknjnbjceabimdchdfhbdhhc)（Store ID `0RDCKFJTD9J2`）。
+上架资料、审核文案与后续发版脚本都在仓库里；**首次提交只能人工**（见下），之后每次发版可用脚本。
 
-### 为什么首次不能自动化
+### 为什么首次提交不能自动化
 
 官方 Update REST API **只能更新已存在的产品**，没有"创建新产品"和"修改商店元数据"的端点：
 
 > "There aren't REST API endpoints for: Creating a new product. Updating a product's metadata,
 > such as the description." —— [官方文档](https://learn.microsoft.com/zh-cn/microsoft-edge/extensions-chromium/publish/api/using-addons-api)
 
-所以流程是：**首次**你在 Partner Center 网页完成注册与提交；**之后**用 `node tools/edge-publish.mjs` 一条命令发版。
+所以流程是：**首次**在 Partner Center 网页完成注册与提交（已由维护者完成）；**之后**用
+`node tools/edge-publish.mjs` 一条命令发版。
 
-### 已备好的东西
+> 上架与发版过程中踩到的具体坑（审核规则、表单行为、平台限制）整理在
+> `store/PUBLISHING.md`，对打算上架 Edge 加载项的开发者可直接参考。
+
+### 上架资料
 
 | 项目 | 位置 |
 |---|---|
-| 逐字段可粘贴的商店文案 | `store/listing-zh-CN.md`（说明 654 字符、搜索词 5 个、权限理由、单一用途、认证说明） |
-| 首次上架分步清单 | `store/PUBLISHING.md` |
+| 逐字段可粘贴的商店文案 | `store/listing-zh-CN.md` / `store/listing-en-US.md`（说明 643 字符、搜索词 5 个、权限理由、单一用途、认证说明） |
+| 上架与发版手记（含避坑要点） | `store/PUBLISHING.md` |
 | 徽标 300×300 / 促销磁贴 440×280、1400×560 | `store/assets/` |
 | 商店截图 ×3（1280×800） | `store/screenshots/` |
 | 隐私政策（GitHub Pages，已启用并实测 200） | `docs/privacy.html` → <https://eastmg.github.io/gacha-calendar-extension/privacy.html> |
