@@ -170,4 +170,4 @@ https://eastmg.github.io/gacha-calendar-extension/privacy.html
 
 > 重新生成：`node tools/make-store-assets.mjs`（会真网络抓一轮作为截图数据），
 > 然后用 `node tools/serve-shot.mjs 8899` 起临时服务，浏览器打开 `_lab/panel-1280x800.html` 等页面截图。
-> 详见 README 的「已取证的部分：面板渲染」。
+> 详见 README_Dev.md 的「已取证的部分：面板渲染」。

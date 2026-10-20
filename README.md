@@ -1,327 +1,129 @@
 # 二游日历 · 浏览器扩展
 
+[![Edge Add-ons](https://img.shields.io/badge/Edge%20Add--ons-%E5%B7%B2%E4%B8%8A%E6%9E%B6-0C59A4)](https://microsoftedge.microsoft.com/addons/detail/mkfokebcmknjnbjceabimdchdfhbdhhc)
+[![release](https://img.shields.io/github/v/release/EastMG/gacha-calendar-extension.svg)](https://github.com/EastMG/gacha-calendar-extension/releases)
+[![license](https://img.shields.io/github/license/EastMG/gacha-calendar-extension.svg)](./LICENSE)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-2563EB)](https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3)
+
 **28 款**二次元手游的**当期卡池与活动起止**一览，点浏览器工具栏图标即可查看。
+Chrome / Edge 通用（Manifest V3）。
 
-> 米哈游（原神 / 星穹铁道 / 绝区零 / 崩坏3）、库洛（鸣潮）、鹰角（明日方舟 / 终末地）、
-> 悠星（蔚蓝档案国服·国际服·日服 / 星塔旅人）、万代（学园偶像大师 等）、
-> BanG Dream 系列、赛马娘（国服·日服·国际服）、少女前线2、Fate/Grand Order、
-> 初音未来：缤纷舞台、物华弥新、战双帕弥什、重返未来：1999、异环 等共 28 款。
+## 截图
 
-抓取逻辑来自独立包 **[`gacha-calendar-core`](https://www.npmjs.com/package/gacha-calendar-core)**
-与 [DSH 桌面端插件](https://github.com/EastMG/dsh-gacha-calendar) 共用同一份核心。
+<p align="center">
+  <img src="assets/popup.png" width="62%" alt="二游日历面板">
+</p>
 
-> **当前内联的核心版本：`gacha-calendar-core@0.12.5`**（构建时会打印实际版本，设置页也能看到）。
-> 升级核心只需改 `package.json` 的依赖版本并重新 `node build.mjs`；
-> **但 core 扩表常带来新域名**，务必跑一次 `npm run verify:domains`（提交钩子也会自动跑）。
-> 注意：核心仓库的版本可能领先于 npm（未发布的修复拿不到），跟随 npm 上的最新版即可。
+<p align="center">
+  <img src="store/screenshots/02-settings.png" width="76%" alt="设置页">
+</p>
 
----
+## 功能
 
-## 安装（加载已解压的扩展程序）
+- **一览式面板**：每款游戏两行——当期卡池（外显 UP 角色）与当期活动，右侧是**倒计时**（还剩 X 天 X 小时 X 分钟）
+- **悬停看细节**：卡池可看完整池名、UP 角色与时间原文；活动可看完整名称与起止时间
+- **刷新与降级**：抓取失败时该列沿用上次成功的数据，并在面板上标出，不会静默显示过期内容
+- **来源可切换**：每款游戏的卡池与活动来源可分别切换，也可填写自定义来源地址
+- **设置页**：展示开关、条目排序、删除与恢复、刷新频率、**解析器自检**
+- **轻量**：不注入任何网页、不收集任何数据，权限只有 `storage` 与具体数据源域名
 
-1. 构建：`node build.mjs`（或直接下载 Release 里的 `.zip` 解压）
+## 已支持的游戏
+
+共 **28 款**。带 ※ 的条目出厂默认不勾选（避免首次打开就铺满），在设置页勾上即可开始抓取；
+带 † 的条目没有默认来源，需在设置页选用一个备选源。
+
+| 游戏 | | 游戏 | |
+|---|---|---|---|
+| 原神 | | 物华弥新 | |
+| 崩坏：星穹铁道 | | 战双帕弥什 | |
+| 绝区零 | | 卡厄斯梦境 | ※ |
+| 崩坏3 | ※ † | 雪松 | |
+| 鸣潮 | | 嘟嘟脸恶作剧 | ※ |
+| 明日方舟 | | 闪耀！优俊少女 | |
+| 明日方舟：终末地 | | 赛马娘·日服 | |
+| 蔚蓝档案·国服 | | 赛马娘·国际服 | |
+| 蔚蓝档案·国际服 | | 女神异闻录：夜幕魅影 | |
+| 蔚蓝档案·日服 | | 异环 | |
+| BanG Dream！少女乐团派对·国服 | | 少女前线2：追放 | |
+| BanG Dream！OurNotes·日服 | ※ | Fate/Grand Order | |
+| BanG Dream！OurNotes·国际服 | ※ † | 初音未来：缤纷舞台·国服 | |
+| | | 星塔旅人 | |
+| | | 重返未来：1999 | |
+
+## 数据来源
+
+排期数据实时抓取自各游戏**官方公告**与社区 Wiki（Bwiki / PRTS / FZ Wiki / GameKee / GameTora 等）。
+
+所有请求由你的浏览器**直接发往**这些来源站；扩展本身不经过任何中转服务器。
+采用克制的抓取策略，并支持自定义刷新频率（默认按天），正常使用不会对来源站造成压力。
+
+## 安装
+
+### 从 Edge 加载项商店安装（推荐）
+
+打开 [商店页](https://microsoftedge.microsoft.com/addons/detail/mkfokebcmknjnbjceabimdchdfhbdhhc) → 点「获取」。
+商店版会**自动更新**，无需手动操作。
+
+### 手动加载（开发者模式）
+
+1. 到 [Releases](https://github.com/EastMG/gacha-calendar-extension/releases) 下载最新的
+   `gacha-calendar-extension-<版本>.zip` 并解压（解压后 `manifest.json` 应在第一层）
 2. 打开 `edge://extensions` 或 `chrome://extensions`
-3. 打开右下角/右上角的 **开发人员模式**
-4. 点 **加载解压缩的扩展**，选择本项目的 `dist/` 目录（或Release `.zip` 解压后的目录）
-5. 点工具栏的「二游日历」图标 → 首次打开会自动抓一轮
+3. 打开「开发人员模式」
+4. 点「加载解压缩的扩展」，选择解压出来的目录
+5. 点工具栏的「二游日历」图标 → 首次打开会自动抓一轮（约 5～15 秒）
+
+> 从旧版本升级时，若本次新增了数据源域名，浏览器会要求**重新确认一次权限**，属正常现象。
 
 ## 使用
 
-- **卡池 / 活动**：外显角色名与活动名；**鼠标悬停**可看完整池名、UP 角色与时间原文
-- **起止**：显示"还剩 X 天 X 小时 X 分钟"的倒计时
-- **右上角按钮**：刷新 / 打开设置页
-- **设置页**：展示开关、条目排序与删除、卡池与活动来源各自切换（含自定义地址）、
-  刷新频率、**解析器自检**
+- **工具栏图标**：弹出面板；右上角按钮为「刷新」与「打开设置」
+- **设置页**：可开关每一款的展示、调整顺序、删除与恢复条目、切换来源、调整刷新频率
+- **解析器自检**：设置页底部「开始自检」会逐个来源跑一遍，报告哪个源解析不出当期内容、
+  哪个源抓取报错——源站改版时可一键定位问题（只读，不改动你的设置与缓存）
 
-### 设置页的能力边界
+### 关于「自定义条目」
 
-- **出厂默认隐藏**：28 款里有 5 款（崩坏3 / BanG Dream！OurNotes 日服·国际服 / 卡厄斯梦境 /
-  嘟嘟脸恶作剧）**出厂不勾选**。这是 core 的设计，避免首次打开就铺满 28 行。
-  在设置页勾上即会写入 `shown` 键并开始抓取（实现见 `src/visibility.js`）。
-- **自定义来源地址**：可在每条目内联填写，但**必须落在扩展已声明的主机列表内**
-  （浏览器扩展的 `host_permissions` 是构建期静态声明的，运行期无法添加）。
-  输入框自带候选主机提示；超范围填写不会被抓取，且无错误提示。
-- **不提供新增"自定义条目"**：原因同上——自定义条目几乎必然指向未声明域名，
-  做出来只会"填了却抓不到"。
-- **删除条目**：内置条目记入 `removed`，可在「已删除的条目」区单独或一次性恢复。
-- **「未配置」条目**：有几款（崩坏3、OurNotes 日服·国际服、卡厄斯梦境）出厂**不抓取**——
-  它们只挂了备选源、没有默认地址。这些条目在来源下拉里显示**「未配置」**（与 core 同一口径），
-  在设置页选一个备选源即可启用。它们同时也是出厂默认隐藏项。
+本扩展支持为**已有条目**填写自定义来源地址，但**不提供新增自定义条目**。
 
-## 构建
+原因与浏览器扩展的权限模型有关：`host_permissions` 必须在构建期静态声明，运行期无法添加。
+自定义条目几乎必然指向未声明的域名，做出来只会"填了却抓不到"，因此不提供该功能。
+自定义来源地址同样受此限制——输入框会提示可用的主机范围。
 
-```bash
-npm install          # 安装 gacha-calendar-core 与 esbuild
-node make-icons.mjs  # 生成图标（仅首次或想改图标时）
-node build.mjs       # 产出 dist/
-node build.mjs --zip # 额外打出 release/*.zip（用于提交商店）
-```
+## 隐私
 
-> 若 `npm install` 因环境限制跑不动（例如受限沙箱里 npm 无法 spawn 子进程），
-> 可退化为手工解包：
-> `npm pack gacha-calendar-core @esbuild/win32-x64` 然后 `tar -xzf` 到 `node_modules/` 对应目录。
-> `build.mjs` 会直接定位平台预编译二进制，不强依赖 npm 的 `.bin` 垫片。
+- **不收集任何个人数据**，不上传任何内容，不含统计与广告代码
+- **不含 content script**，不会读取或修改你正在浏览的任何网页
+- 仅在本地保存两类信息：你的偏好设置，以及最近一次成功抓取的缓存
+- 完整说明见[隐私政策](https://eastmg.github.io/gacha-calendar-extension/privacy.html)
 
-> **提交前先跑 `node verify.mjs && node verify-live.mjs`。** 仓库带了
-> `.githooks/pre-commit`（BOM 检查 + 构建 + 静态校验），启用方式：
-> `git config core.hooksPath .githooks`。单次跳过用 `DSH_SKIP_VERIFY=1 git commit ...`。
->
-> Windows 上若 `git push` 报 `error setting certificate verify locations`，是 CA 路径没配：
-> `git config http.sslCAInfo "<你的 Git 安装目录>/mingw64/ssl/certs/ca-bundle.crt"`。
+## 致谢
 
-### 为什么必须构建
+数据获取手段受以下开源项目启发，特此致谢：
 
-MV3 **禁止远程代码**（不能从 CDN 取代码），所以 `gacha-calendar-core` 必须内联进扩展自己的 js。
-`build.mjs` 用 esbuild 把依赖树打成 `dist/popup.js` 与 `dist/options.js`。
-构建产物带内容哈希便于核对；`background.js` 不依赖 core，原样复制以保持可读可审。
+- [MAA1999/M9A](https://github.com/MAA1999/M9A)——《重返未来：1999》逐期「征集时间」的获取思路
+- [yoimiya-kokomi/miao-plugin](https://github.com/yoimiya-kokomi/miao-plugin)——miHoYo/HoYoverse 公告接口
+- [jacket-sikaha/game-schedule](https://github.com/jacket-sikaha/game-schedule)——miHoYo/HoYoverse 公告接口
+- [BTMuli/ShufflePlay](https://github.com/BTMuli/ShufflePlay)——miHoYo/HoYoverse 公告接口
+- [UIGF-org/mihoyo-api-collect](https://github.com/UIGF-org/mihoyo-api-collect)——`appId` 与公告接口查证
+- [Sekai-World/sekai-master-db-cn-diff](https://github.com/Sekai-World/sekai-master-db-cn-diff)——
+  《初音未来：缤纷舞台》国服卡池与活动排期的数据来源
 
-### 目录
+## 免责声明
 
-```
-manifest.json          MV3 清单（权限最小化：只申请 storage + 精确域名）
-src/_locales/          i18n 消息（zh_CN / en）——**商店据此识别可用语言，不能删**
-src/background.js      service worker：白名单代发跨域请求（唯一的"代理"）
-src/transport.js       core 需要的 transport：直连 + 经 background 代发
-src/storage.js         core 需要的 storage：chrome.storage.local 封装
-src/view-helpers.js    展示层纯函数（倒计时/角色名精简/悬停文案/行渲染模型）
-src/popup.*            面板
-src/options.*          设置页
-src/verify-boot.js     启动自检（仅 `--verify` 构建时打进 background.js，正常构建不含）
-tools/verify-chromium.mjs  Chromium 运行时验证（需在普通桌面环境跑）
-tools/check-domains.mjs    来源域名守卫（已并入 verify.mjs，每次提交自动跑）
-tools/test-domain-guard.mjs   域名守卫自测
-tools/test-entry-meta.mjs     来源显示名口径自测
-tools/test-options.mjs        设置页行为自测（DOM shim）
-tools/i18n.mjs                i18n 消息解析（校验 __MSG_ 能否解析成真实文案）
-tools/probe-i18n.mjs          真实浏览器验证 i18n 已解析（查 profile 里是否出现真名）
-tools/make-store-assets.mjs   生成离线渲染夹具 + 商店素材（徽标/推广图/截图数据）
-tools/icon-art.mjs            图标绘制与 PNG 编码（扩展图标与商店徽标共用同一份）
-tools/serve-shot.mjs          临时静态服务（给夹具截图用；Playwright 禁 file://）
-tools/verify-zip.mjs          release zip 自校验（自己解压 + 核 CRC32；也可当模块调用）
-tools/check-listing.mjs       商店文案与素材的硬性限制校验（字数、图片尺寸精确匹配）
-tools/edge-publish.mjs        自动发布到 Edge 加载项商店（官方 Update API v1.1）
-store/                        上架资料：逐字段文案、素材、首次上架分步清单
-docs/                         GitHub Pages 站点（隐私政策 + 落地页）
-build.mjs              构建（内联 core + 校验清单 + 打包 zip）
-verify.mjs             静态校验
-verify-live.mjs        端到端校验（真网络抓 28 款 + 渲染模型）
-make-icons.mjs         生成图标（Node 内置 zlib 手写 PNG，字节可复现）
-.githooks/pre-commit   提交守卫：BOM 检查 + build + verify + 商店文案校验
-```
+- 本项目为非营利性质的个人项目，与各游戏厂商、发行商及官方/社区 Wiki 均不存在隶属或合作关系。
+- 卡池、活动等排期数据均取自各游戏**公开的官方公告与社区 Wiki**；图标与截图的版权归原权利方所有，
+  本项目仅作信息聚合展示，不提供亦不存储任何游戏资源。
+- **图标资源使用外链**，来自游戏官网自有静态资源或应用商店列表图标。
+- 如权利人认为本项目展示的内容侵犯其合法权益，请通过
+  [Issue](https://github.com/EastMG/gacha-calendar-extension/issues) 告知，核实后将尽快删除相关内容。
 
-## 设计要点（改动前请先读）
-
-### 0. i18n：`_locales` 既是给浏览器用的，也是给商店用的
-
-`manifest.json` 的 `name` / `description` 是 `__MSG_extensionName__` / `__MSG_extensionDescription__`
-占位符，靠 `src/_locales/<locale>/messages.json` 解析，并显式声明 `"default_locale": "zh_CN"`。
-
-**为什么不能省**：除了浏览器要靠它解析扩展名，**Edge 商店也只把包里 `_locales` 声明的语言
-列为可用的商店一览语言**。最早没有 `_locales`（硬编码中文）时，Partner Center 只认出
-`English (United States)`，于是只能把中文塞进 en-US 那一行；补上 i18n 后它才显示
-**Chinese (China) + English** 两行语言。
-
-改动注意：
-
-- 新增语言 → 加 `src/_locales/<locale>/messages.json`，然后**重传包**；语言列表不能手工加
-- `build.mjs` 会把 `src/_locales/**` 复制到 `dist/_locales/**`。漏了这步，扩展名会直接
-  显示成字面量 `__MSG_extensionName__`（`verify.mjs` 与 `tools/check-listing.mjs` 都会拦）
-- 验证真实浏览器里确实解析成功：`node tools/probe-i18n.mjs`（加载扩展后查 profile 里
-  是否出现真实名称、以及**是否出现未解析的占位符**）
-
-### 1. core 的 transport 契约（**最容易踩的坑**）
-
-```js
-transport = {
-  // 直连：CORS 放行的源 → 返回 WHATWG Response（core 自己看 ok/status/text()/json()）
-  fetchRaw(url, opts),
-  // 代发：没有 ACAO 的源 → 返回**目标站原始 body 字符串**（不是 { status, body } 对象！）
-  fetchViaProxy(url, { referer, headers, body })
-}
-```
-
-`fetchViaProxy` 返回错形状**不会报契约错误**，只会让每一款游戏都静默变成"抓取异常"，
-非常难定位。（开发过程中就踩过一次：返回了 `{status, contentType, body}` → 几乎全部条目都报「抓取异常」。）
-
-### 2. 为什么必须经 background 代发
-
-约 **六成**的来源站在响应里**没有** `access-control-allow-origin`（如 Bwiki / canmoe /
-fz.wiki / 万美 / 蔚蓝国服 / Nexon / GameKee / 赛马娘 / FGO / p5x / 少前2 / 1999 / 崩坏3 等），
-浏览器在页面上下文里会直接拦掉这类跨域请求；而 service worker 凭 `host_permissions`
-可以真正跨域，并能自行设置 `Referer` / `Origin`。只有少数站（如
-`api-takumi-static.mihoyo.com`、`api-web.bluearchive.jp`、`sekai-world.github.io`）
-放行 CORS，那些可以直连。
-
-> 具体比例随 core 换来源而变，**不要照抄数字**。复测方法：对每个主来源域名发一次请求，
-> 看响应有没有 `access-control-allow-origin`。当前 core 的抓取域名与图标域名清单，
-> 以 `npm run verify:domains` 的输出为准（守卫会打印三个数字并逐一比对），
-> 完整授权清单见 `manifest.host_permissions`。
-
-### 3. 安全红线与来源域名守卫
-
-- `src/background.js` 的 `ALLOW_HOSTS` **必须保留**：没有它就是"任意内网地址请求器"（SSRF）
-- 消息来源做校验（只接受本扩展自己的页面），否则任何网页都能驱使扩展发请求
-- `manifest.host_permissions` 不申请 `<all_urls>`：既是商店审核要求，也让权限提示可接受
-
-**来源域名守卫**（`tools/check-domains.mjs`，已并入 `verify.mjs`，因此**每次提交都会跑**）：
-它把 core 实际抓取的每个域名，与 `manifest.host_permissions` 和 `background` 白名单逐一对齐。
-
-为什么这条最重要：**core 一换来源，扩展就必须同步申请权限，否则那个来源在浏览器里
-完全抓不到** —— 不报错、不提示，只是那一行没数据，肉眼极难定位。真实发生过两次：
-
-| 漏配域名 | 后果 |
-|---|---|
-| `ak.hypergryph.com`、`zzz.mihoyo.com` | 方舟 / 绝区零部分来源失效 |
-| `notice.sl916.com`、`www.sl916.com` | **重返未来 1999 完全抓不到**（core 换成了官方游戏内公告接口） |
-
-守卫还会**反向报告**"已申请但 core 当前不再使用"的域名，方便精简权限面
-（对上架审核友好）。单独运行：
-
-```bash
-npm run verify:domains     # 只看域名覆盖
-npm run test:domains       # 测守卫自身：该失败时失败、该通过时通过
-```
-
-### 测试
-
-```bash
-npm test                   # 跑下面三个自测
-npm run test:domains       # 域名守卫的通过与拒绝路径（在沙箱副本里用"冒牌 core"）
-npm run test:meta          # 来源显示名口径（标签 / 域名兜底 / 未配置 / 容错）
-npm run test:options       # 设置页行为（用极简 DOM shim 在 Node 里跑真实 src/options.js）
-```
-
-`test:meta` 锁住 `defaultSourceName` 与 core 的 `getDefaultSourceName` **逐支同口径**：
-有标签用标签 → 无标签有地址退到域名（去 `www.`）→ 都没有则显示**裸「未配置」**。
-这三支里第 2、3 支都曾写错（第 2 支缺失、第 3 支误写成「默认来源」），
-而「未配置」正好覆盖那几款出厂不抓取的条目，是设置页上最容易看出问题的位置。
-
-`test:options` 覆盖：条目渲染、**来源下拉文案**、切「自定义…」后出现内联输入框、地址落盘、
-删除条目、单独恢复、批量删除 + 全部恢复、**出厂默认隐藏的三态**。之所以用 DOM shim 而不是浏览器：
-本机的浏览器自动化取证一直不稳定（CDP 求值不通、扩展页 dump 受限），
-而设置页逻辑用假 DOM 驱动更确定，也能直接断言"点了删除之后 storage 里究竟写了什么"。
-
-副本会**整份复制 `src/*.js`**（再覆盖 transport / core-version 两个需伪造的），
-所以新增模块不会再让测试报 `ERR_MODULE_NOT_FOUND`。
-
-### 4. `Referer` 的已知限制
-
-`fetch` 的 `Referer` 在部分浏览器实现中是禁止由脚本设置的。本扩展在 service worker 里尝试设置
-（比页面上下文权限更高），但**不能保证一定生效**。若某个源因校验来源而拒绝，core 会把它记为
-`down` 并沿用上次成功数据、在面板上标出 —— 不会静默显示错误内容。
-
-## 验证状态（诚实说明）
-
-| 验证 | 结果 |
-|---|---|
-| 静态校验（manifest 合法性、零远程代码、权限最小化、来源域名覆盖、图标、版本一致） | **通过（含 core 运行时条目数校验）** |
-| 设置页行为自测（渲染 / 内联自定义地址 / 删除 / 单独恢复 / 全部恢复 / **defaultHidden 三态**） | **通过** |
-| 域名守卫自测（该失败时失败、该通过时通过） | **4/4 通过** |
-| 端到端：真网络抓 **28 款**（与扩展同一份 transport 契约、同一份 core） | **通过（卡池 22/28、活动 22/28）** |
-| 端到端：渲染模型（与 popup 同一份纯函数）逐项断言 | **通过** |
-| **真实 Chromium：渲染构建产物（面板）** | **✅ 已取证**（见 `assets/popup.png`，当前版本，含 23 行可见条目与真实抓取结果） |
-| **真实 Chromium：加载扩展本体并实抓落库** | ⚠️ 未在本机取证，请在普通桌面环境跑 `node tools/verify-chromium.mjs` |
-
-### 已取证的部分：面板渲染
-
-`assets/popup.png` 是用**真实浏览器**渲染 `dist/` 的构建产物（`popup.js` + `popup.css`）得到的，
-数据是**真网络抓的一轮结果**（`成功 21/23`）。图里可以看到：
-
-- 面板标题「二游日历」、刷新按钮、设置按钮
-- 状态栏「数据：联网数据 · 成功 21/23」与抓取结论行
-- 游戏行：原神、崩坏：星穹铁道、绝区零、鸣潮……，每行为「卡池 / 起止 / 活动 / 起止」四段结构
-- 页脚「更新：…」与「悬停查看池名与时间明细」
-
-复现方式：`node tools/make-store-assets.mjs` 生成离线夹具（Node 真抓一轮拿缓存 → 灌进 chrome 桩），
-再用 `node tools/serve-shot.mjs` 起临时静态服务、浏览器打开 `_lab/popup.html` 截图。
-之所以这么绕：真实扩展里截图要靠 CDP，而 CDP 在本机不通（见下），
-且 Playwright 禁止 `file://`。夹具渲染的是**同一份构建产物**，只是数据来自离线种子。
-
-同一轮验证里还确认了：`/json/list` 中扩展的 popup 页面标题就是扩展名，
-且扩展的 service worker 在 `chrome.storage` 下创建了自己的存储目录（即 worker 确实执行了）。
-
-### 尚未取证的部分及原因
-
-**"实抓结果写进浏览器 storage"这一步未能在本机截到**，两个具体原因：
-
-1. `--virtual-time-budget` 会**快进虚拟时间**，而 headless 截图在 load 事件即触发，
-   **不等真实网络** → 截图里数据列仍是占位符 `—`
-2. service worker 写 `chrome.storage` 后，Edge 的 LevelDB 在进程退出前未把内容刷到可读的
-   `.log/.ldb` 里（运行中轮询文件数始终不变），所以从 profile 里读不到报告
-
-**这两条是实现细节，不代表功能有问题**：数据侧的正确性已由 `verify-live.mjs` 覆盖
-（真网络抓 28 款、render 模型与 popup 同一份纯函数、逐字段断言通过）。
-
-### 环境侧的一个真实约束（记录以免重复踩）
-
-在有**文件沙箱**的环境里，Chromium 系浏览器**根本无法执行扩展代码**：
-
-- 浏览器日志持续报 `Failed to grant sandbox access to ... 拒绝访问 (0x5)`
-- 用 3 个文件的"最小扩展"（零依赖、零打包）做对照，service worker 连一行 `console.log` 都没有
-- headless 模式直接崩溃（`crash server failed to launch, self-terminating`）
-- Node 内置 WebSocket 与 DevTools 协议层不通（能握手、命令零响应）
-
-**解除文件沙箱限制后立刻恢复**：同一套脚本下，Edge 成功加载扩展、popup 页面正常打开、
-service worker 正常执行并创建存储目录。所以在受限环境里跑验证脚本前，先确认浏览器能正常启动。
-
-### 人工确认清单（30 秒）
-
-在 `edge://extensions` 加载 `dist/` 后：
-
-- [ ] 工具栏出现「二游日历」图标，点击能弹出面板
-- [ ] 面板显示条目行（默认 **23 行**：28 款减去 5 款出厂默认隐藏）
-- [ ] 顶部显示「数据：联网数据 · 成功 N/28」（首次打开会自动抓一轮，约 5～15 秒）
-- [ ] 卡池列显示角色名（如原神「菲林斯、伊涅芙」），**悬停**能看到池名与时间
-- [ ] 起止列显示「还剩 X 天 X 小时 X 分钟」倒计时
-- [ ] 点右上角齿轮能打开设置页；设置页「开始自检」能跑出报告
-- [ ] 切换某项的「展示」后，回到面板该行消失
-
-## 上架 Microsoft Edge 加载项商店
-
-**现状：已上架** —— [Edge 加载项商店页](https://microsoftedge.microsoft.com/addons/detail/mkfokebcmknjnbjceabimdchdfhbdhhc)（Store ID `0RDCKFJTD9J2`）。
-上架资料、审核文案与后续发版脚本都在仓库里；**首次提交只能人工**（见下），之后每次发版可用脚本。
-
-### 为什么首次提交不能自动化
-
-官方 Update REST API **只能更新已存在的产品**，没有"创建新产品"和"修改商店元数据"的端点：
-
-> "There aren't REST API endpoints for: Creating a new product. Updating a product's metadata,
-> such as the description." —— [官方文档](https://learn.microsoft.com/zh-cn/microsoft-edge/extensions-chromium/publish/api/using-addons-api)
-
-所以流程是：**首次**在 Partner Center 网页完成注册与提交（已由维护者完成）；**之后**用
-`node tools/edge-publish.mjs` 一条命令发版。
-
-> 上架与发版过程中踩到的具体坑（审核规则、表单行为、平台限制）整理在
-> `store/PUBLISHING.md`，对打算上架 Edge 加载项的开发者可直接参考。
-
-### 上架资料
-
-| 项目 | 位置 |
-|---|---|
-| 逐字段可粘贴的商店文案 | `store/listing-zh-CN.md` / `store/listing-en-US.md`（说明 643 字符、搜索词 5 个、权限理由、单一用途、认证说明） |
-| 上架与发版手记（含避坑要点） | `store/PUBLISHING.md` |
-| 徽标 300×300 / 促销磁贴 440×280、1400×560 | `store/assets/` |
-| 商店截图 ×3（1280×800） | `store/screenshots/` |
-| 隐私政策（GitHub Pages，已启用并实测 200） | `docs/privacy.html` → <https://eastmg.github.io/gacha-calendar-extension/privacy.html> |
-| 自动发布脚本 | `tools/edge-publish.mjs` |
-
-### 本地先查一遍
-
-```bash
-npm run store:check      # 文案字数 + 素材尺寸是否踩到商店硬性限制
-npm run store:assets     # 重新生成离线夹具与商店素材（会真网络抓一轮）
-npm run store:dry-run    # 校验凭据/包/URL，不发任何请求
-npm run store:publish    # 上传 + 发布（需 EDGE_CLIENT_ID / EDGE_API_KEY / EDGE_PRODUCT_ID）
-```
-
-> `store:check` 已接入提交钩子 —— 文案字数或图片尺寸不符时，提交会被拦下。
-> 这些限制原本只在 Partner Center 表单里才会被拒，来回成本很高。
-
-### 版本号规则
-
-`manifest.json` 与 `package.json` 必须一致（`build.mjs` 强制校验）；
-上传的版本号还必须**大于商店里的现有版本**，否则 API 返回 400。
-
-## 许可
+## License
 
 MIT
+
+---
+
+源码结构、构建方式与设计要点见 **[README_Dev.md](README_Dev.md)**。
+
+[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)

@@ -3,7 +3,7 @@
 // ⚠️ 为什么不在浏览器里自动验证：本机 Chrome 是在受限沙箱下启动的，**profile 目录写不进去**
 // （实测 profile/Default 为空，连 `Local Extension Settings` 都没建出来）。这导致
 // chrome.storage 落盘、扩展页执行、localhost 回传三条通路全部不可用 —— 是环境限制，
-// 与扩展代码无关。所以"浏览器里点开 popup"这一步留给人工确认（见 README）。
+// 与扩展代码无关。所以"浏览器里点开 popup"这一步留给人工确认（见 README_Dev.md 的人工确认清单）。
 //
 // 本脚本把**能自动化的部分做到最实**：
 //   1. 真网络：用与扩展**同一份 transport 契约**跑 core，真抓全部出厂条目

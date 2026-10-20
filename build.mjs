@@ -92,7 +92,7 @@ function ensureDir(dir) {
 
 /** 定位 esbuild 可执行文件。
  *  说明：本仓库**不依赖 npm 的 .bin 垫片**（那是 shell 包装，部分受限环境下无法执行），
- *  直接用平台预编译二进制。装依赖的方式见 README 的「构建」一节。 */
+ *  直接用平台预编译二进制。装依赖的方式见 README_Dev.md 的「构建」一节。 */
 function esbuildBin() {
 	const candidates = [];
 	if (process.platform === "win32") {
@@ -112,7 +112,7 @@ function esbuildBin() {
 		);
 	}
 	for (const c of candidates) if (fs.existsSync(c)) return c;
-	fail("未找到 esbuild 可执行文件，请先安装依赖（见 README「构建」一节）");
+	fail("未找到 esbuild 可执行文件，请先安装依赖（见 README_Dev.md「构建」一节）");
 }
 
 /** 用 esbuild 把 ESM 依赖树打成单文件 IIFE（core 因此被内联）。 */
