@@ -2,6 +2,7 @@ The extension's function is to fetch publicly available banner/event information
 
 Key points:
 1) It does NOT request <all_urls>, and holds no wildcard/all-web access. Only the specific domains that are actually fetched are declared.
-2) These domains belong to the official announcement pages and community wikis (Bwiki, PRTS, FZ Wiki, GameKee, and others) of games such as Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Arknights, Blue Archive, Uma Musume Pretty Derby, and Fate/Grand Order.
-3) Requests are used solely to read public page content; no user data is sent to these sites.
-4) The extension contains no content script, so it does not read or modify any web page the user is browsing.
+2) These domains belong to the official announcement pages and community wikis (Bwiki, PRTS, FZ Wiki, GameKee, GameTora, and others) of games such as Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Arknights, Blue Archive, Uma Musume Pretty Derby, and Fate/Grand Order.
+3) Among them, `sekai-world.github.io` / `raw.githubusercontent.com` are the static data sources of the Project SEKAI community wiki (hosted on GitHub Pages), and `gh-proxy.com` is the read-only mirror proxy provided by that community. GitHub Pages does not return CORS headers, so the extension must read the same public dataset through that mirror; both serve the same open-source dataset.
+4) Requests are used solely to read public page content; no user data is sent to these sites.
+5) The extension contains no content script, so it does not read or modify any web page the user is browsing.

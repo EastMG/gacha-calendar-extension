@@ -28,6 +28,31 @@
 | **0.2.4 审核** | ✅ 已通过并上架 |
 | **0.2.5 审核** | ✅ **已通过并上架（Live）** |
 | 商店文案补更新 | ⏳ 已提交，审核中（见下文） |
+| **0.2.6 构建** | ✅ 已完成（core 0.12.5），**待上一提交审完再发** |
+
+### ⏳ 0.2.6（core 0.12.5）已备好，等审核窗口
+
+core 从 0.12.0 升到 **0.12.5**，这次**需要改权限**（不像 0.12.0 那次零改动）：
+
+| 变化 | 域名 |
+|---|---|
+| ➕ 新增 | `gametora.com`（赛马娘国际服卡池默认源）<br>`gh-proxy.com`（世界计划社区 Wiki 只读镜像）<br>`raw.githubusercontent.com`（同一套社区数据的原始地址） |
+| ➖ 移除 | `gf2-cn.cdn.sunborngame.com`、`p16-sg.dailygn.com`、`play-lh.googleusercontent.com`、`webcnstatic.yostar.net`（旧图标源，core 已换高清白名单源） |
+
+**净变化 49 → 48 条**；`permissions` 仍只有 `storage`，仍无 `<all_urls>`、无 content script。
+
+数据质量实测提升（同机同日）：
+
+| | core 0.12.0 | core 0.12.5 |
+|---|---|---|
+| 卡池 / 活动有内容 | 19/28 · 19/28 | **22/28 · 22/28** |
+| 请求数 | 105 | **95** |
+
+修好的条目：**赛马娘·国际服**（卡池+活动都通了）、**异环**（原先两侧同时误报未公布）、
+**PJSK 卡池**（走镜像代理源）、蔚蓝档案国际服请求 5→2。
+
+> 状态：`0.2.6` 的包与 GitHub Release 已发；**商店提交要等「文案补更新」审完**
+> （同一扩展只能有一个在审提交）。审完后按「第 9 步」发 0.2.6 即可。
 
 **商店公开页**：
 <https://microsoftedge.microsoft.com/addons/detail/mkfokebcmknjnbjceabimdchdfhbdhhc>

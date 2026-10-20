@@ -93,11 +93,13 @@ check("白名单非空且不含通配", dom.allow.length > 0 && !dom.allow.some(
 if (dom.unusedManifest.length) {
 	console.log(`  ⚠ 已申请但 core 当前未使用（可清理以缩小权限面）：${dom.unusedManifest.join(", ")}`);
 }
-// 需要 host_permissions 的图标域名（否则 <img> 显示不出来）
-const iconMissing = ["storage.moegirl.org.cn", "webcnstatic.yostar.net", "play-lh.googleusercontent.com"].filter(
-	(h) => !dom.manifestHosts.includes(h)
-);
-check("图标域名也在 host_permissions 里", iconMissing.length === 0, iconMissing.join(", "));
+// 需要 host_permissions 的图标域名（否则 <img> 显示不出来）。
+// ⚠️ 必须从 core **动态推导**，不能写死域名列表 —— 写死的名单会随 core 换图标源而过期
+// （2026-10-21 就踩到：core 把 28 个外链图标统一换到白名单高清源后，
+//   webcnstatic.yostar.net / play-lh.googleusercontent.com 在 core 里已 0 次出现，
+//   但这里仍写死着它们，导致校验器对着一个已不存在的问题报错）。
+const iconMissing = dom.iconHosts.filter((h) => !dom.manifestHosts.includes(h));
+check("图标域名也在 host_permissions 里", iconMissing.length === 0, iconMissing.length ? iconMissing.join(", ") : `${dom.iconHosts.length} 个图标域名均已授权`);
 
 console.log("\n=== 4. 零远程代码（MV3 硬性要求）===");
 const jsFiles = ["background.js", "popup.js", "options.js", "core-version.js"];
