@@ -1,4 +1,4 @@
-# 首次上架 Edge 加载项商店：分步清单
+﻿# 首次上架 Edge 加载项商店：分步清单
 
 > **先说结论**：首次上架**无法全自动**，必须你本人在 Partner Center 网页上操作。这不是我偷懒 ——
 > 官方 Update REST API 明确没有"创建新产品"和"修改商店元数据"的端点：
@@ -71,7 +71,7 @@ core 从 0.12.0 升到 **0.12.5**，这次**需要改权限**（不像 0.12.0 �
 | Category | Entertainment |
 | Manifest | V3（`isManifestV2: false`） |
 | permissions | 仅 `storage` |
-| host_permissions | 49 条 |
+| host_permissions | 49 条（0.2.6 起 48 条） |
 | content_scripts | **无** |
 | update_url | 有 ⇒ 已装用户会自动收到后续版本 |
 | activeInstallCount | 0（刚上架，正常） |
@@ -87,6 +87,34 @@ https://microsoftedge.microsoft.com/addons/getproductdetailsbycrxid/mkfokebcmknj
 返回 JSON（`version` / `name` / `description` / `manifest` 等）。
 注意 `manifest` 字段是 **JSON 字符串**，要再 `JSON.parse` 一次。
 加 `Accept-Language: zh-CN` 可拿到中文名称与描述。
+
+### 📊 看下载量 / 用户数（Analytics）
+
+Partner Center → **Analytics** 页有三个标签：`Weekly users` / `Installs` / `Impressions`。
+数据也能直接从接口取（需登录态）：
+
+```
+/analytics/api/vnext/edgeaddons/dailyImpressions?applicationId=<StoreId>&orderBy=date asc&groupBy=date&filter=userCount gt '0'&startDate=<M/D/YYYY>
+/analytics/api/vnext/edgeaddons/dailyInstalls?...
+/analytics/api/vnext/edgeaddons/weeklyActiveInstalls?...
+```
+
+> ⚠️ **两个坑**
+> 1. `page.request.get()`（Node TLS）访问 `partner.microsoft.com` 会报
+>    `unable to get local issuer certificate` —— 必须在**页面内** `fetch()`（同源 + 带 cookie）才行。
+> 2. `dailyUninstalls` 在无数据时返回 **500**（服务端 null 引用），`weeklyRatings` 是 **404**，
+>    都不代表出错，别当成 bug。
+
+**指标口径与滞后**（官方说明）：
+
+- `Installs` = 从 Edge 加载项网站**成功安装**的次数（累计值）
+- `Impressions` = 商店产品页的**浏览量**
+- `Weekly users` = 过去 7 天打开过该扩展的 Edge 实例数（含启用/禁用/未知状态）
+- **数据每周二发布一次，覆盖「上周（截至周日）」** ⇒ 天然滞后；刚上架时通常要等一周才有值
+- 公开接口的 `activeInstallCount` 也是同一个安装数
+
+**首周实测（2026-10-21）**：`Installs` 累计 **0**，`Impressions` **4**（仅 10-17 一天），
+`Weekly users` 无数据，评分 0 条。上架仅数日且未做推广，属正常。
 
 ### ⏳ 商店文案已提交更新（In review，2026-10-21）
 
