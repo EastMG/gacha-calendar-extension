@@ -27,6 +27,7 @@
 | 第 7 步 认证说明并提交 | ✅ 已完成 |
 | **0.2.4 审核** | ✅ 已通过并上架 |
 | **0.2.5 审核** | ✅ **已通过并上架（Live）** |
+| 商店文案补更新 | ⏳ 已提交，审核中（见下文） |
 
 **商店公开页**：
 <https://microsoftedge.microsoft.com/addons/detail/mkfokebcmknjnbjceabimdchdfhbdhhc>
@@ -62,19 +63,26 @@ https://microsoftedge.microsoft.com/addons/getproductdetailsbycrxid/mkfokebcmknj
 注意 `manifest` 字段是 **JSON 字符串**，要再 `JSON.parse` 一次。
 加 `Accept-Language: zh-CN` 可拿到中文名称与描述。
 
-### ⚠️ 待办：线上的商店文案落后于仓库一版
+### ⏳ 商店文案已提交更新（In review，2026-10-21）
 
-发布 0.2.5 时**只换了包，没把改好的文案同步到 Partner Center 表单**，于是：
+**背景**：发布 0.2.5 时**只换了包，没把改好的文案同步到 Partner Center 表单**，导致线上
+描述仍是旧版（zh 654 / en 1738，仍列举 Bestdori），而仓库已是 643 / 1728。
 
-| | 仓库（`store/listing-*.md`） | 线上商店 |
+**已处理**：在 Partner Center 的 Store listings 里把两行描述都替换成仓库版本并重新提交：
+
+| | 旧（线上） | 新（已提交） |
 |---|---|---|
-| zh 详细说明 | 643 字 | **654 字**（旧版） |
-| en 详细说明 | 1728 字 | **1738 字**（旧版） |
-| 是否提到 Bestdori | 否 | **是**（旧版仍列举） |
+| zh 详细说明 | 654 字 | **643 字** |
+| en 详细说明 | 1738 字 | **1728 字** |
+| 提到 Bestdori | 是 | **否** |
 
-功能上无影响（只是示例来源列表里多一个已经降级为备选源的 Bestdori）。
-要修需在 Partner Center 的 Store listings 里把两行描述替换成新版 → Save → Publish
-（会触发一次审核）。**下次发版时一并带上即可**，不必单独发一次。
+状态：`UPDATE - 二游日历 v0.2.5 In review`（**版本号不变**，只更新一览文案）。
+审核通过后线上描述即更新。
+
+> 📌 **教训**：改商店文案要改**两处** —— 仓库的 `store/listing-*.md`（给人看、给校验器查）
+> **和** Partner Center 的表单（真正上线的内容）。只改前者不会生效。
+> 发版流程里应把「同步表单文案」当成一个明确步骤。
+
 
 ### 0.2.5 带来什么
 
