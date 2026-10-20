@@ -14,7 +14,7 @@
 
 ---
 
-## 当前进度（2026-10-17）
+## 当前进度（2026-10-21）
 
 | 步骤 | 状态 |
 |---|---|
@@ -25,29 +25,65 @@
 | 第 5 步 隐私（Privacy） | ✅ 已完成 |
 | 第 6 步 Store 一览 | ✅ 已完成（**两种语言**） |
 | 第 7 步 认证说明并提交 | ✅ 已完成 |
-| **0.2.4 审核** | ✅ **已通过，已上架（Live）** |
-| **0.2.5 更新送审** | ⏳ **审核中（In review）** |
+| **0.2.4 审核** | ✅ 已通过并上架 |
+| **0.2.5 审核** | ✅ **已通过并上架（Live）** |
 
-**商店公开页（已上线）**：
+**商店公开页**：
 <https://microsoftedge.microsoft.com/addons/detail/mkfokebcmknjnbjceabimdchdfhbdhhc>
 
-审核期间线上仍是 **0.2.4**（用户可正常安装），**0.2.5 通过后会自动替换**。
+### 🟢 线上现状（2026-10-21 实测确认）
 
-### ✅ 0.2.4 → 已上架
+用商店的公开接口核验（**无需登录**，见下方「查状态」）：
 
-送审的是 **0.2.4（core 0.11.1）**，已通过审核并 Live，商店页标题
-`Gacha Calendar - Microsoft Edge Add-ons`，HTTP 200 实测可访问。
+| 项 | 值 |
+|---|---|
+| 商店版本 | **0.2.5** ✅ |
+| manifest 版本 | 0.2.5（与商店一致） |
+| 名称（zh-CN / en-US） | **二游日历** / **Gacha Calendar** ← i18n 在真实商店里解析正确 |
+| Store ID | `0RDCKFJTD9J2` |
+| Developer | East Morning |
+| Category | Entertainment |
+| Manifest | V3（`isManifestV2: false`） |
+| permissions | 仅 `storage` |
+| host_permissions | 49 条 |
+| content_scripts | **无** |
+| update_url | 有 ⇒ 已装用户会自动收到后续版本 |
+| activeInstallCount | 0（刚上架，正常） |
 
-### ⏳ 0.2.5 → 审核中（2026-10-17 送审）
+### 查状态（不用登录，推荐）
 
-core 升到 **0.12.0** 后构建的 **0.2.5** 已通过 `Update` 流程提交送审。
-**扩展代码零改动**（core 0.12.0 的公开接口与权限域名都与 0.11.1 一致），
-主要带来来源健康度修复：
+商店有一个公开的产品详情接口，能直接读到线上版本号：
+
+```
+https://microsoftedge.microsoft.com/addons/getproductdetailsbycrxid/mkfokebcmknjnbjceabimdchdfhbdhhc
+```
+
+返回 JSON（`version` / `name` / `description` / `manifest` 等）。
+注意 `manifest` 字段是 **JSON 字符串**，要再 `JSON.parse` 一次。
+加 `Accept-Language: zh-CN` 可拿到中文名称与描述。
+
+### ⚠️ 待办：线上的商店文案落后于仓库一版
+
+发布 0.2.5 时**只换了包，没把改好的文案同步到 Partner Center 表单**，于是：
+
+| | 仓库（`store/listing-*.md`） | 线上商店 |
+|---|---|---|
+| zh 详细说明 | 643 字 | **654 字**（旧版） |
+| en 详细说明 | 1728 字 | **1738 字**（旧版） |
+| 是否提到 Bestdori | 否 | **是**（旧版仍列举） |
+
+功能上无影响（只是示例来源列表里多一个已经降级为备选源的 Bestdori）。
+要修需在 Partner Center 的 Store listings 里把两行描述替换成新版 → Save → Publish
+（会触发一次审核）。**下次发版时一并带上即可**，不必单独发一次。
+
+### 0.2.5 带来什么
+
+core 升到 **0.12.0** 后构建（**扩展代码零改动**，接口与权限域名都与 0.11.1 一致），
+主要是来源健康度修复：
 
 - 赛马娘·国际服：卡池默认源换成 GachaTracker（原官方源已不可用）
 - 终末地：Game8 备选源标注「不可靠」
 - 来源名规范化
-- 顺带修掉文案里过时的来源名（Bestdori 已从主源降为备选源）
 
 0.2.5 的包同时以 ZIP 形式发布在 GitHub Release `v0.2.5`。
 
