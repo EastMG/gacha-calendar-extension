@@ -107,7 +107,7 @@ const seed = {
 // ---------- 2. 生成夹具 ----------
 fs.rmSync(LAB, { recursive: true, force: true });
 fs.mkdirSync(LAB, { recursive: true });
-for (const f of ["popup.js", "popup.css", "options.js", "options.css", "core-version.js", "panel.js", "panel.html", "popup-panel.html", "schedule.css"]) {
+for (const f of ["popup.js", "popup.css", "options.js", "options.css", "core-version.js", "panel.js", "popup-panel.html", "schedule.css"]) {
 	fs.copyFileSync(path.join(DIST, f), path.join(LAB, f));
 }
 
@@ -159,24 +159,6 @@ function inject(html, stub, tail = "") {
 // —— 新日程面板（实验特性）——
 // 与 popup 同一套桩：缓存用 seed 灌进去，页内不再联网。宽度/高度按设计稿留足，
 // 用于和插件侧 assets/screenshot-4.png 做逐块比对。
-const panelHtml = fs.readFileSync(path.join(ROOT, "src", "panel.html"), "utf8");
-fs.writeFileSync(
-	path.join(LAB, "panel-new.html"),
-	inject(
-		panelHtml,
-		chromeStub({
-			order: [],
-			hidden: [],
-			shown: [],
-			removed: [],
-			customEntries: [],
-			customUrls: {},
-			customEventUrls: {},
-			gameColors: "{}"
-		})
-	),
-	"utf8"
-);
 
 // —— 新日程面板的 popup 宿主（520×600）——
 const popupPanelHtml = fs.readFileSync(path.join(ROOT, "src", "popup-panel.html"), "utf8");
@@ -189,7 +171,7 @@ fs.writeFileSync(
 	"utf8"
 );
 
-// —— 面板（README 用）——
+
 const popupHtml = fs.readFileSync(path.join(ROOT, "src", "popup.html"), "utf8");
 fs.writeFileSync(
 	path.join(LAB, "popup.html"),

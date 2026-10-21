@@ -191,7 +191,7 @@ check("popup.js 体积达到内联 core 的量级（>250 KB）", popupSrc.length
 
 // 新日程面板（实验特性）：页面宿主、样式与打包产物必须都在 dist 里，
 // 否则开启开关后点工具栏会打不开页面（且不会有任何提示）。
-for (const f of ["panel.html", "popup-panel.html", "panel.js", "schedule.css"]) {
+for (const f of ["popup-panel.html", "panel.js", "schedule.css"]) {
 	check(`新面板产物存在：${f}`, fs.existsSync(path.join(DIST, f)));
 }
 const panelSrc = fs.existsSync(path.join(DIST, "panel.js")) ? fs.readFileSync(path.join(DIST, "panel.js"), "utf8") : "";

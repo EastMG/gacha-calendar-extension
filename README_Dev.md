@@ -50,7 +50,7 @@ src/entry-meta.js      来源显示名口径（与 core 的 getDefaultSourceName
 src/visibility.js      展示/隐藏判定与写回
 src/popup.*            面板
 src/options.*          设置页
-src/panel.html         新日程面板（实验）的页面宿主
+src/popup-panel.html   新日程面板（实验）的 popup 宿主
 src/panel.js           新日程面板的挂载与数据装配（React root / 刷新 / 时钟）
 src/schedule/          新日程面板：一比一移植自 DSH 插件的组件与样式
   schedule-view.js      组件本体（原样移植，见「设计要点 5」）
@@ -184,8 +184,10 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 
 | 页面 | 尺寸 | 用途 |
 |---|---|---|
-| `popup-panel.html` | 520 × 600（popup 硬上限 800×600） | **工具栏弹窗（默认）**：高度固定 ⇒ `.gacha-cal-sched-body` 内部滚动、底栏常驻 |
-| `panel.html` | 520 × 不定高 | 独立页面（需要大画布时用，如截图/调试） |
+| `popup-panel.html` | 520 × 600（popup 硬上限 800×600） | **工具栏弹窗（唯一宿主）**：高度固定 ⇒ `.gacha-cal-sched-body` 内部滚动、底栏常驻 |
+
+> ⚠️ 早期还有个 `panel.html`（520 × 不定高的独立页面），是面板还不能进 popup 时的宿主。
+> v0.2.13 起改成 popup 后它就没有任何入口了（`onClicked` 也永远不会触发），v0.2.23 已删除。
 
 `panel.js` 通过 `body.popup-host` 判断宿主；「近期」默认最多显示 **2 条**（`nearLimit: 2`，
 展开后仍可看全部、其余靠 4s 轮换）—— 实测 popup 首屏可见「概览 + 近期 2 条 + 2 个完整游戏行 + 底栏」。
@@ -226,7 +228,7 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 - 版式 CSS 追加在 `schedule.css` **末尾**的「扩展侧改版」区块，全部挂在修饰类上
   （`--stacked` / `--recent` / `--slot` / `.gacha-cal-sched-lines` / `.gacha-cal-sched-linecap`），
   不改动任何一条移植来的规则
-- 面板宽度从上游的 690px 收窄到 **520px**（`panel.html` 的 `#root` 宽度），游戏名列 152px
+- 面板宽度从上游的 690px 收窄到 **520px**（`popup-panel.html` 的 `#root` 宽度），游戏名列 152px
 - **每行不显示「卡池 / 活动」指示**（2026-10-21 定稿）：实测去掉后内容本身已足够区分，
   行高由 93px 降到 75px、整表 4777 → 3977px。曾试过「指示与标题同行」的备选方案，
   省同样高度但观感更挤，未采用

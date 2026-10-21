@@ -271,6 +271,7 @@ Partner Center → **Analytics** 页有三个标签：`Weekly users` / `Installs
 | **0.2.20（刷新改图标）** | 底栏刷新按钮改圆形箭头图标；失败时不再变「重试」 |
 | **0.2.21（GameKee 567）** | 加 DNR 规则给 CDN 注入 Referer；修 build.mjs manifest 白名单丢字段 |
 | **0.2.22（popup 外框）** | popup 里卡片去圆角/阴影/边框，满铺窗口（消除方正的边沿阴影） |
+| **0.2.23（删死代码）** | 删除无入口的独立页面 panel.html 及其 onClicked 分支；构建前清空 dist |
 | 商店文案补更新 | ✅ **已过审生效**（zh 643 / en 1728 字符，已不再列举 Bestdori） |
 
 > 0.2.6 涉及**新增 3 个主机权限**（`gametora.com`、`gh-proxy.com`、

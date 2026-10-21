@@ -159,13 +159,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 // —— 实验特性「新日程面板」的入口切换 ——
 //
-// 新面板是整块日程视图（设计宽 690px、高度随条目增长到 ~1100px），远超 popup 的尺寸上限，
-// 因此开启它时把工具栏改成"直接打开独立页面"：popup 置空 + 由 onClicked 建标签页。
-// 关闭时恢复 popup.html，行为与之前完全一致。
-// 工具栏弹窗用哪个页面：新面板开启时用 popup 宿主（520×600），否则用原 popup。
+// 新面板已改造为可在 popup 内使用：固定 520×600（浏览器上限 800×600），内容在面板内部滚动、
+// 底栏常驻。开启时把工具栏 popup 指向 popup-panel.html；关闭时恢复原 popup.html，
+// 行为与之前完全一致。**没有独立页面分支** —— 面板只有 popup 一种宿主。
 const PANEL_POPUP = "popup-panel.html";
-// 独立页面（面板内容需要更大画布时用，例如从设置页/商店截图）——保留但不再默认打开。
-const PANEL_PAGE = "panel.html";
 
 async function syncActionPopup() {
 	try {
@@ -182,7 +179,4 @@ chrome.storage.onChanged.addListener((changes, area) => {
 	if (area === "local" && changes.newPanel) syncActionPopup();
 });
 // 仅在 popup 被置空时触发（即新面板开启时）
-chrome.action.onClicked.addListener(() => {
-	chrome.tabs.create({ url: chrome.runtime.getURL(PANEL_PAGE) });
-});
 syncActionPopup();

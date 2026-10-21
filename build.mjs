@@ -1,4 +1,4 @@
-// 二游日历 · 扩展构建脚本
+﻿// 二游日历 · 扩展构建脚本
 //
 // 为什么要构建：Chromium 扩展**不允许运行时从 CDN 取代码**（MV3 明令禁止远程代码），
 // 所以 gacha-calendar-core 必须内联进扩展自己的 js 里。
@@ -64,7 +64,6 @@ const STATIC = [
 	["src/options.html", "options.html"],
 	["src/options.css", "options.css"],
 	// 新日程面板（实验特性）的页面宿主与样式
-	["src/panel.html", "panel.html"],
 	// 新日程面板的 popup 宿主（工具栏弹窗，520×600）
 	["src/popup-panel.html", "popup-panel.html"],
 	// declarativeNetRequest 静态规则（给 GameKee CDN 注入 Referer）
@@ -192,7 +191,10 @@ function buildArtifacts() {
 }
 
 function main() {
-	ensureDir(DIST);
+	// ⚠️ 清空 dist：否则**上一次构建的残留文件**会留在产物里（v0.2.23 踩到：删了
+//    src/panel.html 之后 dist/panel.html 还在，虽然不在打包清单，但容易误判）。
+fs.rmSync(DIST, { recursive: true, force: true });
+ensureDir(DIST);
 	ensureDir(path.join(DIST, "icons"));
 
 	const artifacts = buildArtifacts();
