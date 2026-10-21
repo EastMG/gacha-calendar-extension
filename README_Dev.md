@@ -162,9 +162,16 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 | 其它纯函数 | `60-helpers.js` / `15-env.js` / `25-parser-shared.js` | `normalizeFail`/`cleanRoleNames`/`parseDisplayRange`/`sideFailText`/`buildRowTitle` 从 `view-helpers.js` 引入（同一份实现）；时区换算（`sourceOffsetMinutes`/`sourceWallParts`）与窗口格式化（`fmtWindow` 等）随组件一并补齐 |
 | 数据装配 | 插件 `CalendarPanel` 的 `visible → games` 合并 | 在 `src/panel.js` 里按同样的字段拼装（banner / event / roles / datesRaw / hover / 失败状态），并补 `tz` 与主题色 |
 
-**为什么是独立页面而不是 popup**：该视图设计宽 690px、高度随条目增长（23 行约 2500px），
-远超浏览器 popup 的尺寸上限（约 800×600）。所以开启开关后，`background.js` 会把
-`chrome.action` 的 popup 置空，改由 `onClicked` 打开 `panel.html` 标签页；关闭时恢复原 popup。
+**宿主形态（两种，共用同一份 panel.js）**：
+
+| 页面 | 尺寸 | 用途 |
+|---|---|---|
+| `popup-panel.html` | 520 × 600（popup 硬上限 800×600） | **工具栏弹窗（默认）**：高度固定 ⇒ `.gacha-cal-sched-body` 内部滚动、底栏常驻 |
+| `panel.html` | 520 × 不定高 | 独立页面（需要大画布时用，如截图/调试） |
+
+`panel.js` 通过 `body.popup-host` 判断宿主：popup 下把「近期」每批从 10 条收窄到 **3 条**
+（`nearLimit`），给下面的游戏表留出空间 —— 实测首屏可见「概览 + 近期 3 条 + 2 个完整游戏行 + 底栏」。
+开启开关时 `background.js` 只切换 `chrome.action` 的 popup，不再打开标签页；关闭时恢复原 popup。
 
 > ⚠️ **要改新面板，请先改上游插件再重新移植**，不要在 `schedule-view.js` 里直接改，
 > 否则两边实现会漂移（该文件顶部有同样的提示）。

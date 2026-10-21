@@ -65,6 +65,8 @@ const STATIC = [
 	["src/options.css", "options.css"],
 	// 新日程面板（实验特性）的页面宿主与样式
 	["src/panel.html", "panel.html"],
+	// 新日程面板的 popup 宿主（工具栏弹窗，520×600）
+	["src/popup-panel.html", "popup-panel.html"],
 	["src/schedule/schedule.css", "schedule.css"]
 ];
 

@@ -162,12 +162,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // 新面板是整块日程视图（设计宽 690px、高度随条目增长到 ~1100px），远超 popup 的尺寸上限，
 // 因此开启它时把工具栏改成"直接打开独立页面"：popup 置空 + 由 onClicked 建标签页。
 // 关闭时恢复 popup.html，行为与之前完全一致。
+// 工具栏弹窗用哪个页面：新面板开启时用 popup 宿主（520×600），否则用原 popup。
+const PANEL_POPUP = "popup-panel.html";
+// 独立页面（面板内容需要更大画布时用，例如从设置页/商店截图）——保留但不再默认打开。
 const PANEL_PAGE = "panel.html";
 
 async function syncActionPopup() {
 	try {
 		const { newPanel } = await chrome.storage.local.get("newPanel");
-		await chrome.action.setPopup({ popup: newPanel === true ? "" : "popup.html" });
+		await chrome.action.setPopup({ popup: newPanel === true ? PANEL_POPUP : "popup.html" });
 	} catch {
 		/* 设置读取失败时保持 manifest 里的默认 popup */
 	}

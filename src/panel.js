@@ -18,6 +18,11 @@ import { buildScrapeInfo } from "./view-helpers.js";
 import { ScheduleView } from "./schedule/schedule-view.js";
 
 const engine = createEngine({ transport, storage: createStorage() });
+
+// 宿主形态：工具栏 popup（520×600）或独立页面（宽、不限高）。
+// popup 里高度只有 600px，「近期」每批只显示 3 条，给下面的游戏表留空间。
+const IS_POPUP = document.body.classList.contains("popup-host");
+const NEAR_LIMIT = IS_POPUP ? 3 : 10;
 const DEFAULT_REFRESH_MINUTES = 24 * 60;
 
 const state = {
@@ -141,7 +146,9 @@ function render() {
 		scrapeLines: state.scrapeLines,
 		// 扩展侧改版的两个开关（见 schedule-view.js 顶部说明）
 		topMode: state.panelTop,
-		stacked: true
+		stacked: true,
+		// 仅 popup 下收窄「近期」批次（独立页面保持 10）
+		nearLimit: NEAR_LIMIT
 	}));
 }
 

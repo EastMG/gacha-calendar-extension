@@ -107,7 +107,7 @@ const seed = {
 // ---------- 2. 生成夹具 ----------
 fs.rmSync(LAB, { recursive: true, force: true });
 fs.mkdirSync(LAB, { recursive: true });
-for (const f of ["popup.js", "popup.css", "options.js", "options.css", "core-version.js", "panel.js", "panel.html", "schedule.css"]) {
+for (const f of ["popup.js", "popup.css", "options.js", "options.css", "core-version.js", "panel.js", "panel.html", "popup-panel.html", "schedule.css"]) {
 	fs.copyFileSync(path.join(DIST, f), path.join(LAB, f));
 }
 
@@ -175,6 +175,17 @@ fs.writeFileSync(
 			gameColors: "{}"
 		})
 	),
+	"utf8"
+);
+
+// —— 新日程面板的 popup 宿主（520×600）——
+const popupPanelHtml = fs.readFileSync(path.join(ROOT, "src", "popup-panel.html"), "utf8");
+fs.writeFileSync(
+	path.join(LAB, "popup-panel.html"),
+	inject(popupPanelHtml, chromeStub({
+		order: [], hidden: [], shown: [], removed: [], customEntries: [],
+		customUrls: {}, customEventUrls: {}, gameColors: "{}"
+	})),
 	"utf8"
 );
 
