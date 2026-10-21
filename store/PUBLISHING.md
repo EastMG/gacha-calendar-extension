@@ -267,10 +267,15 @@ Partner Center → **Analytics** 页有三个标签：`Weekly users` / `Installs
 | **0.2.16（大卡对齐+紧凑）** | 修大图标歪（盒子驱动尺寸）；左栏压紧，卡片 267→216 |
 | **0.2.17（失败提示去重）** | ❌ 仍是两处（被 0.2.18 取代） |
 | **0.2.18（失败并进底栏）** | 删除页内失败横条，明细合并进常驻底栏，按钮变「重试」 |
+| **0.2.19（GameKee CDN 权限）** | gamekee 权限改为裸域 + 子域通配（49 条），修 `host-not-allowed:api-cdn.gamekee.com` |
 | 商店文案补更新 | ✅ **已过审生效**（zh 643 / en 1728 字符，已不再列举 Bestdori） |
 
 > 0.2.6 涉及**新增 3 个主机权限**（`gametora.com`、`gh-proxy.com`、
 > `raw.githubusercontent.com`）并移除 4 个已废弃的图标域名，净变化 49 → 48 条。
+>
+> 2026-10-21（0.2.19）：`www.gamekee.com` → `gamekee.com` + `*.gamekee.com`，净变化 48 → 49 条。
+> 原因：GameKee 的 content CDN 地址来自接口响应的 `content_cdn` 字段（指向 `api-cdn.gamekee.com`），
+> 静态声明 `www.gamekee.com` 覆盖不到，抓取被自有域名守卫拦成 `host-not-allowed`。
 > 用户从旧版本升级时会出现一次权限确认，属正常现象。
 
 > 0.2.7 新增实验性「新日程面板」（一比一移植自 DSH 插件），**权限面未变**；

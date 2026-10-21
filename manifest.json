@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "description": "__MSG_extensionDescription__",
   "default_locale": "zh_CN",
   "icons": {
@@ -74,7 +74,8 @@
     "https://wiki.biligame.com/*",
     "https://www.biligame.com/*",
     "https://www.biligames.com/*",
-    "https://www.gamekee.com/*",
+    "https://gamekee.com/*",
+    "https://*.gamekee.com/*",
     "https://www.ldshop.gg/*",
     "https://www.miyoushe.com/*",
     "https://www.sl916.com/*",

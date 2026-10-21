@@ -54,7 +54,7 @@ const ALLOW_HOSTS = [
 	"wiki.biligame.com",
 	"www.biligame.com",
 	"www.biligames.com",
-	"www.gamekee.com",
+	"gamekee.com",
 	"www.ldshop.gg",
 	"www.miyoushe.com",
 	"www.sl916.com",

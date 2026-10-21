@@ -14,7 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { analyzeDomains } from "./tools/check-domains.mjs";
+import { analyzeDomains, manifestCovers } from "./tools/check-domains.mjs";
 import { resolveManifestText } from "./tools/i18n.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -98,7 +98,7 @@ if (dom.unusedManifest.length) {
 // （2026-10-21 就踩到：core 把 28 个外链图标统一换到白名单高清源后，
 //   webcnstatic.yostar.net / play-lh.googleusercontent.com 在 core 里已 0 次出现，
 //   但这里仍写死着它们，导致校验器对着一个已不存在的问题报错）。
-const iconMissing = dom.iconHosts.filter((h) => !dom.manifestHosts.includes(h));
+const iconMissing = dom.iconHosts.filter((h) => !manifestCovers(new Set(dom.manifestHosts), h));
 check("图标域名也在 host_permissions 里", iconMissing.length === 0, iconMissing.length ? iconMissing.join(", ") : `${dom.iconHosts.length} 个图标域名均已授权`);
 
 console.log("\n=== 4. 零远程代码（MV3 硬性要求）===");

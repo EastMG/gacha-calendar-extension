@@ -102,6 +102,22 @@ export function readAllowHosts() {
 	return new Set([...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]));
 }
 
+/**
+ * manifest.host_permissions 命中：精确 / 子域通配（"*.gamekee.com" 覆盖任意子域与该域本身）。
+ * 为什么需要通配：有的来源地址是**接口响应里给的**（如 GameKee 的 content_cdn
+ * 指向 api-cdn.gamekee.com），静态文本里扫不到，只能按域授权。
+ */
+export function manifestCovers(manifestHosts, host) {
+	for (const entry of manifestHosts) {
+		if (entry === host) return true;
+		if (entry.startsWith("*.")) {
+			const base = entry.slice(2);
+			if (host === base || host.endsWith("." + base)) return true;
+		}
+	}
+	return false;
+}
+
 /** 白名单命中：精确或父域（background 用 endsWith("." + allow) 匹配）。 */
 export function allowedBy(allow, host) {
 	return [...allow].some((a) => host === a || host.endsWith("." + a));
@@ -116,12 +132,15 @@ export function analyzeDomains() {
 	const manifestHosts = readManifestHosts();
 	const allow = readAllowHosts();
 
-	const missingManifest = [...allHosts].filter((h) => !manifestHosts.has(h)).sort();
+	const missingManifest = [...allHosts].filter((h) => !manifestCovers(manifestHosts, h)).sort();
 	const missingAllow = [...allHosts].filter((h) => !iconHosts.has(h) && !allowedBy(allow, h)).sort();
 
 	// 反向：申请了但 core 不再用的（图标域名不算"未使用"）
-	const unusedManifest = [...manifestHosts].filter((h) => !allHosts.has(h) && !iconHosts.has(h)).sort();
-	const unusedAllow = [...allow].filter((h) => !allowedBy(allHosts, h) && !allHosts.has(h)).sort();
+	// "条目是否仍被使用" = 该条目覆盖了某个 core 域名（含子域通配与父域白名单两种写法）
+	const coveredBy = (entry, host) =>
+		host === entry || (entry.startsWith("*.") ? host.endsWith(entry.slice(1)) || host === entry.slice(2) : host.endsWith("." + entry));
+	const unusedManifest = [...manifestHosts].filter((h) => ![...allHosts].some((x) => coveredBy(h, x)) && !iconHosts.has(h)).sort();
+	const unusedAllow = [...allow].filter((h) => ![...allHosts].some((x) => coveredBy(h, x))).sort();
 
 	return {
 		coreVersion: core.version,

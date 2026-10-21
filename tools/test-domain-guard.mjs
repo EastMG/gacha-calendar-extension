@@ -1,4 +1,4 @@
-// 验证域名守卫的**通过与拒绝两条路径**：在沙箱副本里塞"冒牌 core"（含/不含未授权域名），
+﻿// 验证域名守卫的**通过与拒绝两条路径**：在沙箱副本里塞"冒牌 core"（含/不含未授权域名），
 // 确认 check-domains 该失败时失败、该通过时通过。绝不在真仓库上做这类测试。
 import fs from "node:fs";
 import path from "node:path";
@@ -81,10 +81,23 @@ function expect(name, cond, detail = "") {
 	if (r.code !== 0) console.log("    输出：\n      " + r.out.trim().split("\n").slice(0, 6).join("\n      "));
 }
 
+// —— 用例 5：动态 CDN 子域（GameKee content_cdn 指向 api-cdn.gamekee.com）——
+// 这类地址是**接口响应里给的**，静态文本里可能扫不到；靠 manifest 的 *.gamekee.com
+// 与白名单的父域 gamekee.com 兜住。2026-10-21 用户实测报 host-not-allowed:api-cdn.gamekee.com。
+{
+	const dir = makeLab(
+		"subdomain",
+		`const CDN = "https://api-cdn.gamekee.com/v1/content/blocks/609133";\n`
+	);
+	const r = run(dir);
+	expect("动态 CDN 子域（父域已授权）→ 退出码 0", r.started && r.code === 0, `exit ${r.code}`);
+	if (r.code !== 0) console.log("    输出：\n      " + r.out.trim().split("\n").slice(0, 6).join("\n      "));
+}
+
 fs.rmSync(LAB, { recursive: true, force: true });
 console.log("");
 if (failed) {
 	console.log(`✗ ${failed} 项未通过`);
 	process.exit(1);
 }
-console.log("✓ 域名守卫的通过与拒绝路径均正确（4/4）");
+console.log("✓ 域名守卫的通过与拒绝路径均正确（5/5）");

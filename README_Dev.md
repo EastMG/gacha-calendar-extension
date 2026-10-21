@@ -139,6 +139,13 @@ npm run verify:domains     # 只看域名覆盖
 npm run test:domains       # 测守卫自身：该失败时失败、该通过时通过
 ```
 
+> ⚠️ **动态域名**：有的来源地址是**接口响应里给的**，静态文本里扫不到 ——
+> 例：GameKee 的 `content_cdn` 指向 `//api-cdn.gamekee.com/…`（2026-10-21 用户实测
+> `host-not-allowed:api-cdn.gamekee.com`）。这类域名只能按**域**授权：
+> manifest 写 `https://*.gamekee.com/*` + 裸域，`ALLOW_HOSTS` 写父域 `gamekee.com`
+> （`hostAllowed` 用 `endsWith("." + allow)` 匹配）。检查器已支持通配条目
+> （`manifestCovers`），并有用例 5 守着这条路径。
+
 > 图标域名（仅用于 `<img>`）与抓取域名分开统计：前者只要在 `host_permissions` 里，
 > 不需要进代发白名单。**这张清单必须从 core 动态推导，不要写死**——core 换图标源会让
 > 写死的名单过期，进而让校验器对不存在的问题报错（已踩过一次）。
