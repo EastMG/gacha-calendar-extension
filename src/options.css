@@ -280,3 +280,18 @@ input[type="text"] {
 .sc-list li.bad {
 	color: var(--warn);
 }
+
+/* 「顶部区域」在「新日程面板」未开启时禁用：整行变淡 + 选择框不可点 */
+.row.is-off {
+	opacity: 0.55;
+}
+.row.is-off select,
+select:disabled {
+	cursor: not-allowed;
+	background: transparent;
+}
+.row .hint em {
+	font-style: normal;
+	color: var(--warn);
+	margin-left: 4px;
+}

@@ -1,4 +1,4 @@
-// options：设置页。
+﻿// options：设置页。
 //
 // 与 DSH 插件同键名（order / hidden / removed / refreshMinutes / autoRefresh /
 // customUrls / customEventUrls / customEntries），两份配置语义一致，可互相照抄。
@@ -166,12 +166,28 @@ function orderedGames() {
 
 // —— 渲染 ——
 
+/**
+ * 「顶部区域」只在「新日程面板」开启时可选。
+ * 未开启时它对新面板没有任何作用，仍可点会让人误以为改了就生效（用户 2026-10-21 要求禁用）。
+ */
+function syncPanelTopEnabled() {
+	const on = !!(el.newPanel && el.newPanel.checked);
+	if (el.panelTop) {
+		el.panelTop.disabled = !on;
+		el.panelTop.setAttribute("aria-disabled", on ? "false" : "true");
+	}
+	const row = document.getElementById("panelTopRow");
+	// 自测脚本用的是极简假 DOM（没有 classList）⇒ 这里做能力判断，缺了就跳过视觉变淡
+	if (row && row.classList && typeof row.classList.toggle === "function") row.classList.toggle("is-off", !on);
+}
+
 function render() {
 	const order = orderedGames();
 	el.count.textContent = String(allGames.length);
 	el.autoRefresh.checked = cfg.autoRefresh !== false;
 	if (el.newPanel) el.newPanel.checked = cfg.newPanel === true;
 	if (el.panelTop) el.panelTop.value = cfg.panelTop === "slot" ? "slot" : "recent";
+	syncPanelTopEnabled();
 	renderRefreshOptions();
 
 	const frag = document.createDocumentFragment();
@@ -469,7 +485,7 @@ async function runSelfCheck() {
 
 el.autoRefresh.addEventListener("change", () => commit({ autoRefresh: el.autoRefresh.checked }));
 // 实验特性：切换后由 background 同步工具栏行为（开启=直接打开日程页面，关闭=弹 popup）
-if (el.newPanel) el.newPanel.addEventListener("change", () => commit({ newPanel: el.newPanel.checked }));
+if (el.newPanel) el.newPanel.addEventListener("change", () => { commit({ newPanel: el.newPanel.checked }); syncPanelTopEnabled(); });
 if (el.panelTop) el.panelTop.addEventListener("change", () => commit({ panelTop: el.panelTop.value === "slot" ? "slot" : "recent" }));
 el.refreshMinutes.addEventListener("change", () => commit({ refreshMinutes: Number(el.refreshMinutes.value) }));
 el.resetOrder.addEventListener("click", () => commit({ order: null }));
