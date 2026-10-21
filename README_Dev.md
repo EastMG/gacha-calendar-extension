@@ -173,7 +173,7 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 
 | 部分 | 来源 | 处理 |
 |---|---|---|
-| 组件本体 | 插件 `src/client/80-components.js` 第 66-98 行（GameIcon）、第 192-1082 行（日程常量 / 纯函数 / 留白卡 SlotCard / ScheduleView） | 原样移出到 `src/schedule/schedule-view.js`。该文件是 JSX 的**转译产物**（直接调 `react/jsx-runtime`），因此保留其原始代码，不改写渲染逻辑 |
+| 组件本体 | 插件 `src/client/80-components.js` 第 66-98 行（GameIcon）、第 192-1082 行（日程常量 / 纯函数 / 近期卡片 SlotCard / ScheduleView） | 原样移出到 `src/schedule/schedule-view.js`。该文件是 JSX 的**转译产物**（直接调 `react/jsx-runtime`），因此保留其原始代码，不改写渲染逻辑 |
 | 样式 | 插件 `src/client/70-styles.js` 的 `STYLE` | 按选择器提取 sched / slot / marq / inner 相关规则到 `src/schedule/schedule.css`，**规则本身零改动** |
 | 主题变量 | 插件依赖 DSH 宿主的 `--dsw-alias-*` | 扩展里没有宿主，故按 DSH 主题包的**真实取值**补齐兜底（浅色为默认，深色走 `prefers-color-scheme`） |
 | 依赖 | `react`、`react/jsx-runtime` 由宿主注入 | 改为 npm 依赖，构建时以**生产版**内联（见下） |
@@ -192,7 +192,7 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 `panel.js` 通过 `body.popup-host` 判断宿主；「近期」默认最多显示 **2 条**（`nearLimit: 2`，
 展开后仍可看全部、其余靠 4s 轮换）—— 实测 popup 首屏可见「概览 + 近期 2 条 + 2 个完整游戏行 + 底栏」。
 
-留白卡（`SlotCard`）的版式改成**卡片整体左右分栏**：左边是那张大的（进度环 + 图标 +
+近期卡片（`SlotCard`）的版式改成**卡片整体左右分栏**：左边是那张大的（进度环 + 图标 +
 游戏名/剩余天数/标题/档期，内部布局不变），右边是「接下来三条」列表（原来是整行排在下方）。
 高度 401 → 267px，中间用竖分隔线。
 
@@ -219,7 +219,7 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 
 | prop | 取值 | 作用 |
 |---|---|---|
-| `topMode` | `"recent"` / `"slot"` | 顶部区域**同一个位置**二选一：近期列表 / 留白卡。两个 DOM 都挂载，用 CSS `display:none` 隐藏未选中的那个 |
+| `topMode` | `"recent"` / `"slot"` | 顶部区域**同一个位置**二选一：近期列表 / 近期卡片。两个 DOM 都挂载，用 CSS `display:none` 隐藏未选中的那个 |
 | `stacked` | `true` | 游戏表改为**每款游戏两行**（第一行卡池、第二行活动），左侧游戏名跨两行 —— 目的是节省宽度 |
 
 配套内容：

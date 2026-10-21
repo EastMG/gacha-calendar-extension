@@ -60,7 +60,7 @@ let cfg = {
 	refreshMinutes: 24 * 60,
 	// 实验特性：新日程面板（默认关，与 DSH 插件同键名同语义）
 	newPanel: false,
-	// 新面板顶部区域二选一："recent" 近期列表 / "slot" 留白卡
+	// 新面板顶部区域二选一："recent" 近期列表 / "slot" 近期卡片
 	panelTop: "recent"
 };
 /** 生效中的条目（core 已按 removed 过滤）元信息。 */

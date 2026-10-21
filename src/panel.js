@@ -1,4 +1,4 @@
-// 新日程面板（实验特性）的页面宿主。
+﻿// 新日程面板（实验特性）的页面宿主。
 //
 // 组件本身（src/schedule/schedule-view.js）是从 DSH 插件**一比一**移植来的 React 组件；
 // 本文件只负责三件事：给组件喂数据、接住它的两个回调（刷新）、把它挂到页面上。
@@ -33,7 +33,7 @@ const state = {
 	refreshMinutes: DEFAULT_REFRESH_MINUTES,
 	autoRefresh: true,
 	gameColors: "{}",
-	/** 顶部区域二选一："recent" 近期列表 / "slot" 留白卡（设置页切换） */
+	/** 顶部区域二选一："recent" 近期列表 / "slot" 近期卡片（设置页切换） */
 	panelTop: "recent",
 	scrapeInfo: "",
 	scrapeLines: [],
