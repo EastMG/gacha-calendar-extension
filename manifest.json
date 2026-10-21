@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "0.2.20",
+  "version": "0.2.21",
   "description": "__MSG_extensionDescription__",
   "default_locale": "zh_CN",
   "icons": {
@@ -29,7 +29,8 @@
     "type": "module"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "declarativeNetRequestWithHostAccess"
   ],
   "host_permissions": [
     "https://ak.hypergryph.com/*",
@@ -82,5 +83,14 @@
     "https://yh.wanmei.com/*",
     "https://zzz.mihoyo.com/*"
   ],
-  "minimum_chrome_version": "102"
+  "minimum_chrome_version": "102",
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "gamekee-cdn-referer",
+        "enabled": true,
+        "path": "dnr.json"
+      }
+    ]
+  }
 }

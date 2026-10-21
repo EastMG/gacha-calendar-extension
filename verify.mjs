@@ -59,7 +59,16 @@ check("包里带 _locales 目录（商店据此识别可用语言）", mfText.lo
 check("action.default_popup 存在", !!(mf.action && mf.action.default_popup), mf.action && mf.action.default_popup);
 check("background.service_worker 存在", !!(mf.background && mf.background.service_worker), mf.background && mf.background.service_worker);
 check("background.type === module", !mf.background || mf.background.type === "module", mf.background && mf.background.type);
-check("permissions 只含 storage", JSON.stringify(mf.permissions) === JSON.stringify(["storage"]), JSON.stringify(mf.permissions));
+// 权限面：只允许 storage 与 declarativeNetRequestWithHostAccess。
+// 后者是给 GameKee CDN 注入 Referer 用的（Chrome 的 fetch 不能设 Referer）——
+// 它只对已授权的 host 生效，不含"拦截全站请求"的 declarativeNetRequest 权限。
+const ALLOWED_PERMS = ["storage", "declarativeNetRequestWithHostAccess"];
+const extraPerms = (mf.permissions || []).filter((p) => !ALLOWED_PERMS.includes(p));
+check(
+	"permissions 只有 storage（+ 注入 Referer 用的 declarativeNetRequestWithHostAccess）",
+	extraPerms.length === 0,
+	JSON.stringify(mf.permissions)
+);
 check(
 	"未申请 <all_urls>（商店审核红线）",
 	!mf.host_permissions.includes("<all_urls>") && !mf.host_permissions.includes("*://*/*"),
@@ -74,6 +83,36 @@ check(
 console.log("\n=== 2. 版本一致性 ===");
 const pkg = readJson(path.join(ROOT, "package.json"));
 check("package.json 与 manifest 版本一致", pkg.version === mf.version, `${pkg.version} / ${mf.version}`);
+
+// —— declarativeNetRequest：GameKee CDN 需要 Referer，而 fetch 不能设置 Referer ——
+{
+  const dnrPath = path.join(ROOT, "dist", "dnr.json");
+  const mf2 = JSON.parse(fs.readFileSync(path.join(ROOT, "manifest.json"), "utf8"));
+  const rules = mf2.declarative_net_request?.rule_resources || [];
+  check("manifest 声明了 DNR 规则集", rules.length > 0, rules.map((r) => r.path).join(", "));
+  check(
+    "已申请 declarativeNetRequestWithHostAccess（改请求头所需，不申请 would-be 全站拦截权限）",
+    (mf2.permissions || []).includes("declarativeNetRequestWithHostAccess")
+  );
+  check("规则文件已进入产物", fs.existsSync(dnrPath), dnrPath);
+  // ⚠️ 这条是踩坑补的：build.mjs 用**字段白名单**写 manifest，declarative_net_request 曾因此被丢弃，
+  //    症状是"规则文件在、但规则集没加载"（SW 里 chrome.declarativeNetRequest 也拿不到规则）。
+  const distMf = JSON.parse(fs.readFileSync(path.join(ROOT, "dist", "manifest.json"), "utf8"));
+  check(
+    "产物 manifest 带上 declarative_net_request（build 白名单没丢字段）",
+    !!distMf.declarative_net_request && (distMf.declarative_net_request.rule_resources || []).length > 0,
+    JSON.stringify(distMf.declarative_net_request || null)
+  );
+  let ok = false;
+  try {
+    const rs = JSON.parse(fs.readFileSync(dnrPath, "utf8"));
+    const rule = rs.find((r) => String(r.condition?.urlFilter || "").includes("api-cdn.gamekee.com"));
+    ok = !!rule && (rule.action?.requestHeaders || []).some(
+      (h) => h.header === "Referer" && h.operation === "set" && h.value === "https://www.gamekee.com/"
+    );
+  } catch { /* 解析失败即视为不通过 */ }
+  check("规则 = 给 api-cdn.gamekee.com 注入 Referer: https://www.gamekee.com/", ok);
+}
 
 const dom = analyzeDomains();
 console.log(`\n=== 3. 来源域名覆盖（core ${dom.coreVersion} → manifest + 白名单）===`);

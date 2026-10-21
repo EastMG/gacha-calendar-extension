@@ -67,6 +67,8 @@ const STATIC = [
 	["src/panel.html", "panel.html"],
 	// 新日程面板的 popup 宿主（工具栏弹窗，520×600）
 	["src/popup-panel.html", "popup-panel.html"],
+	// declarativeNetRequest 静态规则（给 GameKee CDN 注入 Referer）
+	["src/dnr.json", "dnr.json"],
 	["src/schedule/schedule.css", "schedule.css"]
 ];
 
@@ -168,7 +170,11 @@ function buildArtifacts() {
 		background: manifest.background,
 		permissions: manifest.permissions,
 		host_permissions: VERIFY ? ["http://127.0.0.1/*", ...manifest.host_permissions] : manifest.host_permissions,
-		minimum_chrome_version: manifest.minimum_chrome_version
+		minimum_chrome_version: manifest.minimum_chrome_version,
+		// ⚠️ 这里是**字段白名单**：新增 manifest 顶层字段必须加进来，否则会被静默丢弃。
+		//    2026-10-21 踩过：declarative_net_request 没加 ⇒ dist 里没有规则集，
+		//    GameKee CDN 的 Referer 注入不生效，且 SW 里 chrome.declarativeNetRequest 为 undefined。
+		...(manifest.declarative_net_request ? { declarative_net_request: manifest.declarative_net_request } : {})
 	};
 	out.set("manifest.json", JSON.stringify(mf, null, 2) + "\n");
 	// background.js：正常构建原样复制（保持可读、便于审查）；

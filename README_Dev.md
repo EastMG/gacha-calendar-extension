@@ -146,6 +146,17 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 > （`hostAllowed` 用 `endsWith("." + allow)` 匹配）。检查器已支持通配条目
 > （`manifestCovers`），并有用例 5 守着这条路径。
 
+> ⚠️ **需要伪造 Referer 的来源**：Chrome 的 `fetch()` 会丢弃禁止头 `Referer`，
+> 后台代发也设不上。GameKee 的 CDN（`api-cdn.gamekee.com`）却只认
+> `Referer: https://www.gamekee.com/`（实测：无 Referer / 扩展自身 Referer / 带路径 Referer 全 567，
+> 恰好纯 origin → 200）。做法：`src/dnr.json` 用 `declarativeNetRequest` 的
+> `modifyHeaders` 在请求发出前注入 Referer，manifest 声明
+> `declarativeNetRequestWithHostAccess` + `declarative_net_request.rule_resources`。
+>
+> ⚠️ **build.mjs 写 manifest 是字段白名单**：新增顶层字段（如 `declarative_net_request`）
+> 必须同步加进 `mf = {...}`，否则会被**静默丢弃** —— 症状是"规则文件在产物里、但规则集没加载"。
+> verify.mjs 已加产物级校验守着这条。
+
 > 图标域名（仅用于 `<img>`）与抓取域名分开统计：前者只要在 `host_permissions` 里，
 > 不需要进代发白名单。**这张清单必须从 core 动态推导，不要写死**——core 换图标源会让
 > 写死的名单过期，进而让校验器对不存在的问题报错（已踩过一次）。
