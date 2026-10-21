@@ -268,6 +268,7 @@ Partner Center → **Analytics** 页有三个标签：`Weekly users` / `Installs
 | **0.2.17（失败提示去重）** | ❌ 仍是两处（被 0.2.18 取代） |
 | **0.2.18（失败并进底栏）** | 删除页内失败横条，明细合并进常驻底栏，按钮变「重试」 |
 | **0.2.19（GameKee CDN 权限）** | gamekee 权限改为裸域 + 子域通配（49 条），修 `host-not-allowed:api-cdn.gamekee.com` |
+| **0.2.20（刷新改图标）** | 底栏刷新按钮改圆形箭头图标；失败时不再变「重试」 |
 | 商店文案补更新 | ✅ **已过审生效**（zh 643 / en 1728 字符，已不再列举 Bestdori） |
 
 > 0.2.6 涉及**新增 3 个主机权限**（`gametora.com`、`gh-proxy.com`、

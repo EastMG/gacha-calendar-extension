@@ -753,3 +753,35 @@
 	height: 12px;
 	flex: 0 0 auto;
 }
+
+/* ── 底栏刷新按钮：图标按钮（不再是文字「刷新/重试」）─────────────────────
+   原按钮是 padding:1px 9px 的文字胶囊；改成 22×22 的圆形图标钮，
+   图标自绘内联 SVG（.gacha-cal-sched-btn-ic），刷新中整体转圈。 */
+.gacha-cal-sched-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	margin-left: auto;
+	border-radius: 999px;
+}
+.gacha-cal-sched-btn-ic {
+	width: 13px;
+	height: 13px;
+	display: block;
+}
+.gacha-cal-sched-btn--busy .gacha-cal-sched-btn-ic {
+	animation: gacha-cal-spin 1s linear infinite;
+}
+/* 减少动态效果：转圈关掉（与其它无限动画一致） */
+@media (prefers-reduced-motion: reduce) {
+	.gacha-cal-sched-btn--busy .gacha-cal-sched-btn-ic { animation: none; }
+}
+
+/* 刷新中的转圈（图标按钮用；面板里原本没有这个关键帧） */
+@keyframes gacha-cal-spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}

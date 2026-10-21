@@ -458,6 +458,18 @@ function scheduleWarnIcon(cls) {
 		]
 	});
 }
+// 底栏「刷新」按钮的图标：顺时针循环箭头（自绘内联 SVG，不用 emoji/外链）。
+function scheduleRefreshIcon(cls) {
+	return (0, react_jsx_runtime.jsxs)("svg", {
+		className: cls, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor",
+		strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round",
+		"aria-hidden": "true", focusable: "false",
+		children: [
+			(0, react_jsx_runtime.jsx)("path", { d: "M13.5 8a5.5 5.5 0 1 1-1.9-4.16" }),
+			(0, react_jsx_runtime.jsx)("path", { d: "M13.6 2.2v3.3h-3.3" })
+		]
+	});
+}
 // GameIcon 自带 5px 圆角；这里用外层方框定尺寸/圆角/描边（多出来的圆角由 overflow 裁掉）。
 // 尺寸与设计稿一致：近期行 26（图 24 + 1px 描边）、游戏表 40（图 38 + 1px 描边）。
 function scheduleIcon(cls, g, size) {
@@ -1049,11 +1061,16 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 				})
 				: scrapeInfo ? (0, react_jsx_runtime.jsx)("span", { className: "gacha-cal-sched-scrape", title: (scrapeLines || []).join("\n"), children: scrapeInfo }) : null,
 			(0, react_jsx_runtime.jsx)("span", { className: "gacha-cal-sched-when", title: [lastRefreshText, scrapeInfo].concat(scrapeLines || []).filter(Boolean).join("\n"), children: "上次更新 " + scheduleAgo(s.lastRefresh, now) }),
+			// 刷新按钮：**图标按钮**，文案/图标不随"有没有失败"变化（失败也只是刷新一次）。
+			// refreshing 时图标转圈，与"刷新中"状态一致。
 			(0, react_jsx_runtime.jsx)("button", {
-				type: "button", className: "gacha-cal-sched-btn", disabled: refreshing,
-				title: refreshing ? "刷新中..." : failed.length ? "重试（整轮刷新）" : "刷新",
-				"aria-label": refreshing ? "刷新中..." : failed.length ? "重试" : "刷新",
-				onClick: onRefresh, children: failed.length ? "重试" : "刷新"
+				type: "button",
+				className: "gacha-cal-sched-btn" + (refreshing ? " gacha-cal-sched-btn--busy" : ""),
+				disabled: refreshing,
+				title: refreshing ? "刷新中..." : "刷新",
+				"aria-label": refreshing ? "刷新中..." : "刷新",
+				onClick: onRefresh,
+				children: scheduleRefreshIcon("gacha-cal-sched-btn-ic")
 			})
 		] })
 	] });
