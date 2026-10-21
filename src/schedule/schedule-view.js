@@ -2,7 +2,7 @@
 //
 // 来源：该仓库 src/client/80-components.js
 //   · 第 66-98 行   gameIconGlyph / GameIcon
-//   · 第 192-1082 行 日程常量、纯函数（schedule*）、留白卡 SlotCard、以及 ScheduleView 本体
+//   · 第 192-1082 行 日程常量、纯函数（schedule*）、近期卡片 SlotCard、以及 ScheduleView 本体
 //
 // 移植方式：**不改写组件的渲染逻辑**。原文件是 JSX 的转译产物（直接调用 react/jsx-runtime），
 // 因此这里保留其原始代码，只补齐它原本由 DSH 宿主提供的两个模块绑定
@@ -12,7 +12,7 @@
 // ⚠️ 改动本文件前请优先改上游（插件）对应区段再重新移植，否则两边会漂移。
 //
 // ⚠️ 本文件已含**扩展侧改版**（不属于上游）：ScheduleView 多两个可选 prop ——
-//    · topMode: "recent" | "slot"  顶部区域在「近期列表」与「留白卡」之间二选一
+//    · topMode: "recent" | "slot"  顶部区域在「近期列表」与「近期卡片」之间二选一
 //    · stacked: true               游戏表改为每款游戏两行（卡池 / 活动）以节省宽度
 //    两者都不传时行为与上游一致。改动点均以「扩展侧改版」注释标出。
 
@@ -517,7 +517,7 @@ function scheduleAgo(ts, now) {
 // 日程面板本体。props 全部来自 CalendarPanel（同一份渲染快照）；组件自身**没有** UI 状态 ——
 // 设计稿要求"不折叠、不点开"，所以旧版的"展开更多"连同它的 useState 一起删了。
 // 通用循环器：每 seconds 秒把 step 推一格（count 格一轮）；paused 时不排下一拍。
-// 近期分页与留白卡共用；模块级 hook ⇒ 组件身份稳定，状态不会被父级重渲染重置。
+// 近期分页与近期卡片共用；模块级 hook ⇒ 组件身份稳定，状态不会被父级重渲染重置。
 function useCycle(count, seconds, paused) {
 	const [step, setStep] = (0, react.useState)(0);
 	(0, react.useEffect)(() => {
@@ -582,7 +582,7 @@ function slotWheel(e) {
 		((el.closest(".gacha-cal-sched") || document).querySelector(".gacha-cal-sched-body"));
 	if (v && v.scrollHeight > v.clientHeight) v.scrollTop += e.deltaY;
 }
-// ── 留白卡（模块作用域）──────────────────────────────────────────────
+// ── 近期卡片（模块作用域）──────────────────────────────────────────────
 // ⚠️ 必须定义在这里，不能定义在 ScheduleView 内部：
 // 父组件每秒都会重渲染（时钟 setNow），定义在里面的组件每次都是**新的函数身份**，
 // React 会当作另一种组件 → 卸载重建 → useState 被重置 → 悬停暂停当场失效。
@@ -632,9 +632,9 @@ function slotWheel(e) {
 	}
 	// ⚠️ 这里**不能**用设置页的覆盖表：slotAccent 定义在 ScheduleView/SlotCard 之外的作用域，
 	//    拿不到 gameColorMap（上一版就是在这里踩了 ReferenceError，面板整块渲染失败）。
-	//    但留白卡的 --g **就是**用户覆盖色：CalendarPanel 已把覆盖色并进条目的 color
+	//    但近期卡片的 --g **就是**用户覆盖色：CalendarPanel 已把覆盖色并进条目的 color
 	//    （colorOverrides[g.id] 命中时写 g = { ...g, color: ov }），本函数读 g.color
-	//    ⇒ 覆盖色照样生效。旧注释写"留白卡暂时用出厂色/名字哈希、覆盖色只作用于表格行与设置页"
+	//    ⇒ 覆盖色照样生效。旧注释写"近期卡片暂时用出厂色/名字哈希、覆盖色只作用于表格行与设置页"
 	//    与事实相反（真实行为比那更好）。
 	const slotAccent = (it) => scheduleGameColor(it.g);
 	// 档期行：有 raw 才补分隔符；没有开始时间就不显示"已过 0%"（那是假信息）
@@ -643,7 +643,7 @@ function slotWheel(e) {
 		return (it.raw ? it.raw + " · " : "") + "已过 " + Math.round(frac * 100) + "%";
 	}
 	const SCHEDULE_SLOT_SECS = 4;
-	// 留白卡本体：普通组件（useState 推进 + useEffect 定时），悬停即不再排下一拍
+	// 近期卡片本体：普通组件（useState 推进 + useEffect 定时），悬停即不再排下一拍
 	function SlotCard({ list, now }) {
 		const ending = list.filter((x) => x && typeof x.endTs === "number" && x.state !== "long" && x.endTs > now)
 			.sort((a, b) => a.endTs - b.endTs);
@@ -739,7 +739,7 @@ function scheduleGlanceSegs(within24, within7) {
 function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefreshText, scrapeInfo, scrapeLines, topMode, stacked, nearLimit }) {
 	// ══ 扩展侧改版（2026-10-21，有意偏离上游）══════════════════════════════════
 	// topMode = "recent" | "slot"
-	//   顶部区域**同一个位置**只显示一样：近期列表 或 留白卡（设置页二选一）。
+	//   顶部区域**同一个位置**只显示一样：近期列表 或 近期卡片（设置页二选一）。
 	//   实现上两个都挂载、用 CSS 隐藏未选中的那个 —— 组件结构不动，行为保持可回退。
 	// stacked = true
 	//   游戏表改为「每款游戏两行」：第一行卡池、第二行活动，左侧游戏名跨两行。
@@ -748,7 +748,7 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 	const STACKED = stacked === true;
 	// 每行不再显示「卡池 / 活动」指示（2026-10-21 定稿：内容本身已足够区分）。
 	// 每游戏主题色覆盖表（面板侧；设置组件里另有一份同名的）。
-	// ⚠️ 必须在这里也定义一次：下面的行 --g 与留白卡 slotAccent 都在本组件里用它，
+	// ⚠️ 必须在这里也定义一次：下面的行 --g 与近期卡片 slotAccent 都在本组件里用它，
 	//    漏了就是 ReferenceError ⇒ 整个面板（连带插件 UI）挂不上。
 	// T3：改由 CalendarPanel 把**已经解析好的表**传进来（colorMap），消除"同一份 JSON 在
 	//     两个组件各 parse 一次"；colorMap 缺席时才退回自己解析（保持组件可独立使用）。
@@ -784,7 +784,7 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 		}
 	}
 	const sourceNameOf = (x) => (x.isG ? x.g.source : x.g.eventSource) || "";
-	// 刷新失败是**来源级**问题（某个网站抓不到），不属于任何一格 → 底部横条 + 重试
+	// 刷新失败是**来源级**问题（某个网站抓不到），不属于任何一格 → 并进常驻底栏（⚠ + 明细）
 	const failed = [];
 	for (const list of cells.values()) for (const x of list) if (isDown(x.fail)) failed.push(x);
 	const failRows = failed.map((x) => {
@@ -1029,9 +1029,8 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 
 		] }),
 		// ⑦ 底部（**常驻面板下端**）：它在滚动层**之外**，所以内容不会从它下面穿过、也不会被切成两半。
-		//    左：刷新成功/失败横幅（旧面板 .gacha-cal-scrape 那条，悬停给逐来源明细）；右：上次更新 + 刷新。
 		//    左：刷新成功/失败横幅（就是旧面板 .gacha-cal-scrape 那条，悬停给逐来源明细）；
-		//    右：上次更新 X 分钟前 + 刷新。
+		//    右：上次更新 X 分钟前 + 刷新图标按钮。
 		(0, react_jsx_runtime.jsxs)("div", { className: "gacha-cal-sched-foot", children: [
 			// 扩展侧改版：**失败明细并进这条常驻底栏**（原先滚动区底部还有一条 failbar，
 			// 两处说同一件事 ⇒ 已删除 failbar，只保留这里一处）。

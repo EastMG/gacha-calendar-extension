@@ -19,9 +19,8 @@ import { ScheduleView } from "./schedule/schedule-view.js";
 
 const engine = createEngine({ transport, storage: createStorage() });
 
-// 宿主形态：工具栏 popup（520×600）或独立页面（宽、不限高）。
-// popup 里高度只有 600px，「近期」每批只显示 3 条，给下面的游戏表留空间。
-// 「近期」默认最多显示 2 条（展开后仍可看全部）。
+// 面板只有一种宿主：工具栏 popup（520×600，内容在内部滚动、底栏常驻）。
+// 「近期」默认最多显示 2 条（展开后仍可看全部）—— 给下面的游戏表留高度。
 const NEAR_LIMIT = 2;
 const DEFAULT_REFRESH_MINUTES = 24 * 60;
 
@@ -116,7 +115,8 @@ async function loadState() {
 	state.lastSource = cfg.lastSource || "none";
 	state.refreshMinutes = Number(cfg.refreshMinutes) || DEFAULT_REFRESH_MINUTES;
 	state.autoRefresh = cfg.autoRefresh !== false;
-	state.gameColors = typeof cfg.gameColors === "string" ? cfg.gameColors : "{}";
+	// 设置页写入的是 JSON 字符串；若读到非字符串（历史数据/异常），按已解析的对象回写一份，别丢掉覆盖色
+	state.gameColors = typeof cfg.gameColors === "string" ? cfg.gameColors : JSON.stringify(colorOverrides);
 	state.panelTop = cfg.panelTop === "recent" ? "recent" : "slot";
 
 	// 底部横幅：优先用本轮刷新的结果，没有就用缓存里的最近一次结果算出来

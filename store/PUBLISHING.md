@@ -278,6 +278,7 @@ Partner Center → **Analytics** 页有三个标签：`Weekly users` / `Installs
 | **0.2.27（取色器）** | 设置页每个条目可自定义强调色（原生取色器 + ↺ 恢复默认） |
 | **0.2.28（颜色口径统一）** | 设置页色块改为显示面板真实颜色（共用 game-color.js + sourceTable） |
 | **0.2.29（悬停精简）** | 颜色色块悬停只显示色值（语义留在 aria-label） |
+| **0.2.30（通读清理）** | 注释/命名统一、删死 CSS（failbar 系列）、gameColors 边界加固 |
 | 商店文案补更新 | ✅ **已过审生效**（zh 643 / en 1728 字符，已不再列举 Bestdori） |
 
 > 0.2.6 涉及**新增 3 个主机权限**（`gametora.com`、`gh-proxy.com`、
