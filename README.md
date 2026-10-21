@@ -1,4 +1,4 @@
-# 二游日历 · 浏览器扩展
+﻿# 二游日历 · 浏览器扩展
 
 [![Edge Add-ons](https://img.shields.io/badge/Edge%20Add--ons-%E5%B7%B2%E4%B8%8A%E6%9E%B6-0C59A4)](https://microsoftedge.microsoft.com/addons/detail/mkfokebcmknjnbjceabimdchdfhbdhhc)
 [![release](https://img.shields.io/github/v/release/EastMG/gacha-calendar-extension.svg)](https://github.com/EastMG/gacha-calendar-extension/releases)
@@ -97,16 +97,16 @@ Chrome / Edge 通用（Manifest V3）。
 
 - **总览行**：24 小时内 / 7 天内的条目数，右侧日期胶囊
 - **顶部区域（可切换）**：设置页「顶部区域」可二选一（**需先开启「新日程面板」**，未开启时该项不可选）——
-  - **近期列表**（默认）：按紧迫度排序的在期条目，**默认最多显示 2 条**，
+  - **近期列表**：按紧迫度排序的在期条目，**默认最多显示 2 条**，
     每 4 秒轮换一批，可「展开全部」
-  - **近期卡片**：当前最紧迫那一条的大卡片 —— **左边是大卡**（图标 + 剩余天数 + 标题 + 档期），
+  - **近期卡片（默认）**：当前最紧迫那一条的大卡片 —— **左边是大卡**（图标 + 剩余天数 + 标题 + 档期），
     **右边是接下来三条**
 - **日程表**：每款游戏**两行**——第一行卡池、第二行活动，各自带起止时间、
   倒计时与 **14 天迷你进度条**；左侧游戏名跨两行
 - **失败横条**：某来源抓不到时集中在底部提示，可一键重试
 
 面板弹出后首屏是「概览 + 近期 2 条 + 2 个完整游戏行」，向下滚动看全部 23 款
-（整表约 4000px）。**默认关闭**；关闭时行为与之前完全一致，仍是原来的小面板。
+（整表约 4000px）。**默认开启**（默认顶部区域为「近期卡片」）；关闭后行为与之前完全一致，仍是原来的小面板。
 
 <p align="center">
   <img src="assets/panel-popup.png" width="60%" alt="新日程面板的 popup 形态">

@@ -59,9 +59,11 @@ let cfg = {
 	autoRefresh: true,
 	refreshMinutes: 24 * 60,
 	// 实验特性：新日程面板（默认关，与 DSH 插件同键名同语义）
-	newPanel: false,
+	// 默认开启（用户 2026-10-21 指定）
+	newPanel: true,
 	// 新面板顶部区域二选一："recent" 近期列表 / "slot" 近期卡片
-	panelTop: "recent"
+	// 默认「近期卡片」（= slot）
+	panelTop: "slot"
 };
 /** 生效中的条目（core 已按 removed 过滤）元信息。 */
 let allGames = [];
@@ -185,8 +187,8 @@ function render() {
 	const order = orderedGames();
 	el.count.textContent = String(allGames.length);
 	el.autoRefresh.checked = cfg.autoRefresh !== false;
-	if (el.newPanel) el.newPanel.checked = cfg.newPanel === true;
-	if (el.panelTop) el.panelTop.value = cfg.panelTop === "slot" ? "slot" : "recent";
+	if (el.newPanel) el.newPanel.checked = cfg.newPanel !== false;
+	if (el.panelTop) el.panelTop.value = cfg.panelTop === "recent" ? "recent" : "slot";
 	syncPanelTopEnabled();
 	renderRefreshOptions();
 
@@ -543,8 +545,8 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		),
 		autoRefresh: stored.autoRefresh !== false,
 		refreshMinutes: Number(stored.refreshMinutes) || 24 * 60,
-		newPanel: stored.newPanel === true,
-		panelTop: stored.panelTop === "slot" ? "slot" : "recent"
+		newPanel: stored.newPanel !== false,
+		panelTop: stored.panelTop === "recent" ? "recent" : "slot"
 	};
 	render();
 })().catch((err) => {

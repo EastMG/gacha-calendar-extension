@@ -167,7 +167,8 @@ const PANEL_POPUP = "popup-panel.html";
 async function syncActionPopup() {
 	try {
 		const { newPanel } = await chrome.storage.local.get("newPanel");
-		await chrome.action.setPopup({ popup: newPanel === true ? PANEL_POPUP : "popup.html" });
+		// 默认开启：只有显式存了 false 才回落到原 popup
+		await chrome.action.setPopup({ popup: newPanel === false ? "popup.html" : PANEL_POPUP });
 	} catch {
 		/* 设置读取失败时保持 manifest 里的默认 popup */
 	}

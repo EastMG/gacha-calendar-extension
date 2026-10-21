@@ -34,7 +34,8 @@ const state = {
 	autoRefresh: true,
 	gameColors: "{}",
 	/** 顶部区域二选一："recent" 近期列表 / "slot" 近期卡片（设置页切换） */
-	panelTop: "recent",
+	// 默认「近期卡片」（slot）；设置页可切回「近期列表」
+	panelTop: "slot",
 	scrapeInfo: "",
 	scrapeLines: [],
 	refreshing: false
@@ -116,7 +117,7 @@ async function loadState() {
 	state.refreshMinutes = Number(cfg.refreshMinutes) || DEFAULT_REFRESH_MINUTES;
 	state.autoRefresh = cfg.autoRefresh !== false;
 	state.gameColors = typeof cfg.gameColors === "string" ? cfg.gameColors : "{}";
-	state.panelTop = cfg.panelTop === "slot" ? "slot" : "recent";
+	state.panelTop = cfg.panelTop === "recent" ? "recent" : "slot";
 
 	// 底部横幅：优先用本轮刷新的结果，没有就用缓存里的最近一次结果算出来
 	const ordered = state.games.map((g) => ({ id: g.id, name: g.name }));
