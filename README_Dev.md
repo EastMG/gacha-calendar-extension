@@ -172,6 +172,27 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 > 📌 React 必须按生产版打包：`build.mjs` 里传了 `--define:process.env.NODE_ENV="production"`。
 > 漏了它，esbuild 会保留开发版分支，`panel.js` 会从 ~700KB 涨到 ~1.5MB 并带调试告警。
 
+#### 扩展侧改版（不属于上游）
+
+在移植版基础上，本扩展对面板做了两处**有意偏离上游**的版式改动，均以组件可选 prop 实现
+（不传时行为与上游一致）：
+
+| prop | 取值 | 作用 |
+|---|---|---|
+| `topMode` | `"recent"` / `"slot"` | 顶部区域**同一个位置**二选一：近期列表 / 留白卡。两个 DOM 都挂载，用 CSS `display:none` 隐藏未选中的那个 |
+| `stacked` | `true` | 游戏表改为**每款游戏两行**（第一行卡池、第二行活动），左侧游戏名跨两行 —— 目的是节省宽度 |
+
+配套内容：
+
+- 开关来自设置页「实验特性」：`newPanel`（总开关）与 `panelTop`（顶部区域二选一）
+- 版式 CSS 追加在 `schedule.css` **末尾**的「扩展侧改版」区块，全部挂在修饰类上
+  （`--stacked` / `--recent` / `--slot` / `.gacha-cal-sched-lines` / `.gacha-cal-sched-linecap`），
+  不改动任何一条移植来的规则
+- 面板宽度从上游的 690px 收窄到 **520px**（`panel.html` 的 `#root` 宽度），游戏名列 152px
+- 上下排列时每行左侧新增「卡池 / 活动」小标（`capOf`），含类型图标与配色
+
+> 组件文件顶部与改动点都标了「扩展侧改版」注释，便于日后与上游比对。
+
 
 ## 测试
 

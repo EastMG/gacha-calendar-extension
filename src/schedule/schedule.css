@@ -1,4 +1,4 @@
-/* 新日程面板（实验特性）—— 一比一样式移植自 DSH 插件
+﻿/* 新日程面板（实验特性）—— 一比一样式移植自 DSH 插件
    gacha-calendar 的 src/client/70-styles.js。
    原样式大量使用 DSH 宿主的主题变量 --dsw-alias-*；浏览器扩展里没有宿主，
    故按 DSH 主题包的真实取值补齐兜底（浅色为默认，深色走 prefers-color-scheme）。
@@ -603,3 +603,69 @@
 			   ⚠️ B4b：.gacha-cal-spin（面板刷新按钮的 .8s 无限旋转）原先不在任何 reduce 块里。
 			   只把 animation 置 none；名称/时长/延迟/缓动/作用目标与非 reduce 行为一律不动。 */
 			@media (prefers-reduced-motion:reduce){.gacha-cal-sched-nearpg,.gacha-cal-slot-row,.gacha-cal-marq .gacha-cal-inner,.gacha-cal-settings-name.gacha-cal-marq .gacha-cal-inner,.gacha-cal-spin{animation:none}}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   扩展侧改版（2026-10-21）—— 以下规则**不属于上游**，全部挂在修饰类上，
+   不改动上面任何一条移植来的规则，因此关掉开关时版式与上游逐值一致。
+
+   ① 顶部区域二选一：同一个位置只显示「近期列表」或「留白卡」
+   ② 游戏表上下排列：每款游戏两行（卡池 / 活动），左侧游戏名跨两行 —— 以节省宽度
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── ① 顶部区域二选一 ── */
+/* 两个都挂载，用 display:none 隐藏未选中的那个（结构不变、可随时切回） */
+.gacha-cal-sched-recent--recent .gacha-cal-sched-urgent { flex: 1 1 auto; }
+.gacha-cal-sched-recent--recent .gacha-cal-sched-slot { display: none; }
+.gacha-cal-sched-recent--slot .gacha-cal-sched-urgent { display: none; }
+.gacha-cal-sched-recent--slot { justify-content: center; }
+/* 卡片单独占位时不要被拉伸成整行宽（保持卡片比例），居中显示 */
+.gacha-cal-sched-recent--slot .gacha-cal-sched-slot { flex: 0 1 460px; max-width: 100%; }
+
+/* ── ② 游戏表上下排列 ── */
+/* 表头：只剩「游戏」一列；两栏表头与第二根刻度隐藏 */
+.gacha-cal-sched-tcap--stacked { grid-template-columns: 152px 1fr; }
+.gacha-cal-sched-tcap--stacked .gacha-cal-sched-th { display: none; }
+.gacha-cal-sched-rulerrow--stacked { grid-template-columns: 152px 1fr; }
+.gacha-cal-sched-rulerrow--stacked .gacha-cal-sched-ruler:last-child { display: none; }
+
+/* 行：游戏名一列 + 右侧上下两行 */
+.gacha-cal-sched-trow--stacked {
+	grid-template-columns: 152px 1fr;
+	gap: 0 10px;
+}
+.gacha-cal-sched-lines {
+	display: grid;
+	grid-template-rows: auto auto;
+	min-width: 0;
+	gap: 2px;
+}
+/* 每行左侧的「卡池 / 活动」小标 */
+.gacha-cal-sched-linecap {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-bottom: 1px;
+	font-size: 10.5px;
+	font-weight: 600;
+	line-height: 1;
+	color: var(--dsw-alias-label-tertiary, #81858c);
+}
+.gacha-cal-sched-linecap[data-t="gacha"] { color: var(--dsw-alias-state-business-primary, #4176e6); }
+.gacha-cal-sched-linecap[data-t="event"] { color: var(--dsw-alias-state-warn-label, #dd8629); }
+.gacha-cal-sched-linecap .gacha-cal-sched-tic { width: 11px; height: 11px; }
+/* 两行之间加一条细分隔线（第一行不加） */
+.gacha-cal-sched-trow--stacked .gacha-cal-sched-cell {
+	padding: 3px 0 5px;
+	border-top: 1px solid var(--dsw-alias-border-l1, #0000000a);
+}
+.gacha-cal-sched-trow--stacked .gacha-cal-sched-cell:first-child { border-top: none; padding-top: 1px; }
+/* 游戏名在窄列里可能放不下：允许两行显示，别撑破列宽 */
+.gacha-cal-sched-trow--stacked .gacha-cal-sched-gm { align-self: center; gap: 8px; }
+.gacha-cal-sched-trow--stacked .gacha-cal-sched-gn {
+	white-space: normal;
+	line-height: 1.3;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}

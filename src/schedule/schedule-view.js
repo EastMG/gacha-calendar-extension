@@ -10,6 +10,11 @@
 // view-helpers.js 引入（那边是逐函数移植的同一份实现）。
 //
 // ⚠️ 改动本文件前请优先改上游（插件）对应区段再重新移植，否则两边会漂移。
+//
+// ⚠️ 本文件已含**扩展侧改版**（不属于上游）：ScheduleView 多两个可选 prop ——
+//    · topMode: "recent" | "slot"  顶部区域在「近期列表」与「留白卡」之间二选一
+//    · stacked: true               游戏表改为每款游戏两行（卡池 / 活动）以节省宽度
+//    两者都不传时行为与上游一致。改动点均以「扩展侧改版」注释标出。
 
 import * as react from "react";
 import * as react_jsx_runtime from "react/jsx-runtime";
@@ -728,7 +733,16 @@ function scheduleGlanceSegs(within24, within7) {
 		{ label: "7 天内 ", n: within7, tail: " 条" }
 	];
 }
-function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefreshText, scrapeInfo, scrapeLines }) {
+function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefreshText, scrapeInfo, scrapeLines, topMode, stacked }) {
+	// ══ 扩展侧改版（2026-10-21，有意偏离上游）══════════════════════════════════
+	// topMode = "recent" | "slot"
+	//   顶部区域**同一个位置**只显示一样：近期列表 或 留白卡（设置页二选一）。
+	//   实现上两个都挂载、用 CSS 隐藏未选中的那个 —— 组件结构不动，行为保持可回退。
+	// stacked = true
+	//   游戏表改为「每款游戏两行」：第一行卡池、第二行活动，左侧游戏名跨两行。
+	//   ⚠️ 目的是**节省宽度**（原版是 游戏 | 卡池 | 活动 三列并排）。
+	const TOP_SLOT = topMode === "slot";
+	const STACKED = stacked === true;
 	// 每游戏主题色覆盖表（面板侧；设置组件里另有一份同名的）。
 	// ⚠️ 必须在这里也定义一次：下面的行 --g 与留白卡 slotAccent 都在本组件里用它，
 	//    漏了就是 ReferenceError ⇒ 整个面板（连带插件 UI）挂不上。
@@ -844,14 +858,23 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 			]
 		});
 	};
+	// 上下排列时，每行左侧的「卡池 / 活动」小标（含类型图标）
+	const capOf = (side) => (0, react_jsx_runtime.jsxs)("div", {
+		className: "gacha-cal-sched-linecap", "data-t": side,
+		children: [
+			scheduleKindIcon(side, "gacha-cal-sched-tic"),
+			(0, react_jsx_runtime.jsx)("span", { children: side === "gacha" ? "卡池" : "活动" })
+		]
+	});
 	// 表格里的一格：名称 + 「档期 · 状态」+ 14 天迷你条。**不折叠不点开**：同格多条时露一条 + 「另有 N 条」
-	const cellView = (g, side) => {
+	const cellView = (g, side, withCap) => {
 		const isG = side === "gacha";
 		const list = cells.get(g.id + ":" + side) || [];
 		if (!list.length) {
 			return (0, react_jsx_runtime.jsxs)("div", {
 				className: "gacha-cal-sched-cell gacha-cal-sched-cell--none", "data-t": side,
 				children: [
+					withCap ? capOf(side) : null,
 					(0, react_jsx_runtime.jsx)("div", { className: "gacha-cal-sched-cn", children: "—" }),
 					(0, react_jsx_runtime.jsx)("div", { className: "gacha-cal-sched-cm gacha-cal-sched-num", children: isG ? "该来源无卡池数据" : "该来源无活动数据" }),
 					scheduleBars(null, days)
@@ -907,7 +930,7 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 			onPointerLeave: (e) => slotLeave(e.currentTarget),
 
 			children: [
-				itemOf(it, "first"),
+				withCap ? capOf(side) : null, itemOf(it, "first"),
 				rest.length ? (0, react_jsx_runtime.jsx)("div", {
 					className: "gacha-cal-sched-rest",
 					onWheel: slotWheel,
@@ -921,7 +944,7 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 	// 这样"鼠标向上移动"时，上一行正在展开的底板一定压得住下一行尚未收回的内容 ——
 	// 不依赖"谁在悬停"（那是会随时间变化的，会出现两格抢层级、下面的字压住上面的底板）。
 	const rowOf = (g, i) => (0, react_jsx_runtime.jsxs)("div", {
-		className: "gacha-cal-sched-trow",
+		className: "gacha-cal-sched-trow" + (STACKED ? " gacha-cal-sched-trow--stacked" : ""),
 		key: g.id,
 		style: { "--g": scheduleGameColor(g, gameColorMap), "--z": String(900 - i) },
 		children: [
@@ -929,8 +952,9 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 				scheduleIcon("gacha-cal-sched-gic", g, 38),
 				(0, react_jsx_runtime.jsx)("span", { className: "gacha-cal-sched-gn", children: g.name })
 			] }),
-			cellView(g, "gacha"),
-			cellView(g, "event")
+			STACKED
+				? (0, react_jsx_runtime.jsx)("div", { className: "gacha-cal-sched-lines", children: [cellView(g, "gacha", true), cellView(g, "event", true)] })
+				: [cellView(g, "gacha"), cellView(g, "event")]
 		]
 	});
 
@@ -970,7 +994,7 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 			(0, react_jsx_runtime.jsx)("span", { className: "gacha-cal-sched-sp", children: (0, react_jsx_runtime.jsx)("span", { className: "gacha-cal-sched-pill gacha-cal-sched-pill--live", children: datePill }) })
 		] }),
 		// ③ 「近期」：跨游戏、按紧迫度、全列出；右侧是「下一个截止」卡（见上）
-		(0, react_jsx_runtime.jsxs)("div", { className: "gacha-cal-sched-recent", children: [
+		(0, react_jsx_runtime.jsxs)("div", { className: "gacha-cal-sched-recent gacha-cal-sched-recent--" + (TOP_SLOT ? "slot" : "recent"), children: [
 			(0, react_jsx_runtime.jsxs)("div", {
 				className: "gacha-cal-sched-urgent",
 				onPointerEnter: () => setNearHeld(true),
@@ -995,13 +1019,13 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 			(0, react_jsx_runtime.jsx)(SlotCard, { list: all, now: now })
 		] }),
 		// ④ 游戏表：**没有区块标题**，列表头直接跟在后面
-		(0, react_jsx_runtime.jsxs)("div", { className: "gacha-cal-sched-tcap", children: [
+		(0, react_jsx_runtime.jsxs)("div", { className: "gacha-cal-sched-tcap" + (STACKED ? " gacha-cal-sched-tcap--stacked" : ""), children: [
 			(0, react_jsx_runtime.jsx)("span", { children: "游戏" }),
 			(0, react_jsx_runtime.jsxs)("span", { className: "gacha-cal-sched-th", "data-t": "gacha", children: [scheduleKindIcon("gacha", "gacha-cal-sched-tic"), "卡池"] }),
 			(0, react_jsx_runtime.jsxs)("span", { className: "gacha-cal-sched-th", "data-t": "event", children: [scheduleKindIcon("event", "gacha-cal-sched-tic"), "活动"] })
 		] }),
 		// 两栏共用同一根 14 天轴：刻度只画一次（左右各一份，列宽与迷你条完全一致）
-		(0, react_jsx_runtime.jsxs)("div", { className: "gacha-cal-sched-rulerrow", children: [
+		(0, react_jsx_runtime.jsxs)("div", { className: "gacha-cal-sched-rulerrow" + (STACKED ? " gacha-cal-sched-rulerrow--stacked" : ""), children: [
 			(0, react_jsx_runtime.jsx)("span", {}), ruler(), ruler()
 		] }),
 		(0, react_jsx_runtime.jsx)("div", { className: "gacha-cal-sched-theadline" }),

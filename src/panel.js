@@ -28,6 +28,8 @@ const state = {
 	refreshMinutes: DEFAULT_REFRESH_MINUTES,
 	autoRefresh: true,
 	gameColors: "{}",
+	/** 顶部区域二选一："recent" 近期列表 / "slot" 留白卡（设置页切换） */
+	panelTop: "recent",
 	scrapeInfo: "",
 	scrapeLines: [],
 	refreshing: false
@@ -95,7 +97,7 @@ async function loadState() {
 		engine.getCached(),
 		readKeys([
 			"order", "hidden", "shown", "removed", "customEntries", "customUrls", "customEventUrls",
-			"gameColors", "refreshMinutes", "autoRefresh", "lastSource"
+			"gameColors", "panelTop", "refreshMinutes", "autoRefresh", "lastSource"
 		])
 	]);
 	const order = Array.isArray(cfg.order) ? cfg.order : [];
@@ -109,6 +111,7 @@ async function loadState() {
 	state.refreshMinutes = Number(cfg.refreshMinutes) || DEFAULT_REFRESH_MINUTES;
 	state.autoRefresh = cfg.autoRefresh !== false;
 	state.gameColors = typeof cfg.gameColors === "string" ? cfg.gameColors : "{}";
+	state.panelTop = cfg.panelTop === "slot" ? "slot" : "recent";
 
 	// 底部横幅：优先用本轮刷新的结果，没有就用缓存里的最近一次结果算出来
 	const ordered = state.games.map((g) => ({ id: g.id, name: g.name }));
@@ -135,7 +138,10 @@ function render() {
 		onRefresh: doRefresh,
 		lastRefreshText: state.refreshedAt ? new Date(state.refreshedAt).toLocaleString() : "—",
 		scrapeInfo: state.scrapeInfo,
-		scrapeLines: state.scrapeLines
+		scrapeLines: state.scrapeLines,
+		// 扩展侧改版的两个开关（见 schedule-view.js 顶部说明）
+		topMode: state.panelTop,
+		stacked: true
 	}));
 }
 
