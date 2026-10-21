@@ -317,9 +317,6 @@ input[type="color"].color-swatch {
 	appearance: none;
 	-webkit-appearance: none;
 }
-input[type="color"].color-swatch.is-default {
-	border-style: dashed;
-}
 input[type="color"].color-swatch::-webkit-color-swatch-wrapper {
 	padding: 2px;
 }

@@ -10,6 +10,8 @@
 
 import { createEngine } from "gacha-calendar-core";
 import { createStorage, readKeys, writeKeys } from "./storage.js";
+import { gameColor, isHexColor } from "./game-color.js";
+import { sourceTable } from "./entry-meta.js";
 import { transport } from "./transport.js";
 import { createVisibility, toggleVisibility } from "./visibility.js";
 // 默认来源显示名与 core 的 getDefaultSourceName 同口径（含「未配置」文案）
@@ -67,6 +69,8 @@ let cfg = {
 };
 /** 生效中的条目（core 已按 removed 过滤）元信息。 */
 let allGames = [];
+// 出厂色在 core 的运行时来源表里（listGames 不返回 color）——与面板同一个来源
+let colorTable = new Map();
 /** 主机白名单（来自 manifest，供自定义地址输入框提示可选范围）。 */
 let allowedHosts = [];
 
@@ -184,6 +188,7 @@ function syncPanelTopEnabled() {
 }
 
 function render() {
+	colorTable = sourceTable(engine);
 	const order = orderedGames();
 	el.count.textContent = String(allGames.length);
 	el.autoRefresh.checked = cfg.autoRefresh !== false;
@@ -256,13 +261,18 @@ function renderEntry(game, index, order) {
 	// 存储形如 { 游戏id: "#rrggbb" }；没有该键 = 用 core 算出的出厂色。
 	const colors = asObject(cfg.gameColors);
 	const curColor = typeof colors[game.id] === "string" ? colors[game.id] : "";
+	// **显示面板里实际在用的颜色**（覆盖 or 名字哈希色盘），而不是一个灰块占位 ——
+	// 两端共用 src/game-color.js 的 gameColor()，口径必然一致。
+	// 出厂色来自 core 的 SOURCES（与面板 mergeGames 的 src.color 同源）；无则回落到名字哈希
+	const factory = colorTable.get(game.id) || {};
+	const effective = gameColor({ id: game.id, name: game.name, color: factory.color }, colors);
 	const colorCell = document.createElement("div");
 	colorCell.className = "cell-center color-cell";
 	const swatch = document.createElement("input");
 	swatch.type = "color";
-	swatch.className = "color-swatch" + (curColor ? "" : " is-default");
-	swatch.value = /^#[0-9a-fA-F]{6}$/.test(curColor) ? curColor : "#888888";
-	swatch.title = curColor ? "自定义颜色（点击修改）" : "默认颜色（点击自定义）";
+	swatch.className = "color-swatch";
+	swatch.value = isHexColor(effective) ? effective : "#888888";
+	swatch.title = (curColor ? "自定义颜色 " : "出厂色 ") + effective + "（点击修改）";
 	swatch.addEventListener("change", () => {
 		const map = asObject(cfg.gameColors);
 		map[game.id] = swatch.value;

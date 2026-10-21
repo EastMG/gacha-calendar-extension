@@ -1,4 +1,4 @@
-// 新日程面板（实验特性）—— **一比一**移植自 DSH 插件 dsh-gacha-calendar。
+﻿// 新日程面板（实验特性）—— **一比一**移植自 DSH 插件 dsh-gacha-calendar。
 //
 // 来源：该仓库 src/client/80-components.js
 //   · 第 66-98 行   gameIconGlyph / GameIcon
@@ -19,6 +19,7 @@
 import * as react from "react";
 import * as react_jsx_runtime from "react/jsx-runtime";
 import { normalizeFail, cleanRoleNames, parseDisplayRange, sideFailText, buildRowTitle } from "../view-helpers.js";
+import { gameColor } from "../game-color.js";
 
 // —— 上游 60-helpers.js 里缺的两个小工具（view-helpers 未包含）——
 const isDown = (f) => !!f && f.kind === "down";
@@ -151,22 +152,8 @@ const SCHEDULE_LONG_MS = 366 * 864e5;     // 窗口超过一年 = 长期档期�
 const SCHEDULE_DUE_MS = 864e5;            // 24 小时内到期 = "今天到期"
 const SCHEDULE_AMBER_MS = 7 * 864e5;      // 一周内 = 一段琥珀文字（本周留意）
 const SCHEDULE_WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-// 没有 color 的条目（自定义条目）→ 按**游戏名哈希**落到这组固定色盘：同一款永远同色。
-const SCHEDULE_PALETTE = ["#E0709F", "#3FA9A0", "#E0A93B", "#4A6CF7", "#7A5AF8", "#2FB3C9", "#E06C4A", "#5C9E3F"];
-
-// 这一款游戏的代表色：条目自带 color（由 SOURCES 下发）优先，否则按名字哈希（同名恒同色）。
-function scheduleGameColor(g, overrides) {
-	// 用户覆盖优先（设置页每游戏取色器写入 gameColors[id]）
-	const id = g && g.id ? String(g.id) : "";
-	const ov = overrides && id && typeof overrides[id] === "string" ? String(overrides[id]).trim() : "";
-	if (/^#[0-9a-f]{6}$/i.test(ov)) return ov;
-	const own = g && typeof g.color === "string" ? g.color.trim() : "";
-	if (own) return own;
-	const name = String((g && g.name) || "");
-	let h = 0;
-	for (const ch of name) h = (h * 31 + ch.codePointAt(0)) >>> 0;
-	return SCHEDULE_PALETTE[h % SCHEDULE_PALETTE.length];
-}
+// 这一款游戏的代表色：**与设置页取色器共用同一份实现**（src/game-color.js）
+const scheduleGameColor = gameColor;
 
 // ── 档期文本的两套口径（用户 2026-10-21 定）────────────────────────────────
 //   · **外显**（面板上看得见的时间文本）= 按**用户本机时区**换算后的时间 ——
