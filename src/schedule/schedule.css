@@ -669,3 +669,20 @@
 	-webkit-box-orient: vertical;
 	overflow: hidden;
 }
+
+/* ── ②-补：上下排列下探头的层级与收起态修正 ─────────────────────────────
+   原版两格并排，探头展开时只压住**下面的行**（行级 --z 保证上面的行在上），
+   所以格子的 z-index 用行序即可。改成上下排列后，同一款游戏的「活动」格就在探头正下方
+   且同属一行 ⇒ 它带着 900-i 的 z-index，会把 z-index:2 的探头压住 ⇒
+   表现为「展开的文字和下面的活动行互相穿插 / 背板像没了」。
+   这里把展开的探头抬到所有格子之上，并把收起态探头改为**只在悬停时出现**
+   （否则那 12px 虚化条会夹在卡池/活动两行之间，看起来像多出一条变形的小条）。 */
+.gacha-cal-sched-trow--stacked .gacha-cal-sched-rest { display: none; }
+.gacha-cal-sched-trow--stacked .gacha-cal-sched-cell:hover .gacha-cal-sched-rest {
+	display: block;
+	z-index: 2000;
+}
+/* ⚠️ 抬**格子本身**的层级，而不是只抬探头：
+   格子带 `z-index: var(--z)` 会形成层叠上下文，探头写在 2000 也**出不去**这个上下文，
+   同桌的另一格（活动）仍按行序 900-i 把它整棵子树压住 ⇒ 必须让悬停中的格子整体升到所有行之上。 */
+.gacha-cal-sched-trow--stacked .gacha-cal-sched-cell:hover { z-index: 3000; }
