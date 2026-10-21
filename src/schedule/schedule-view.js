@@ -535,8 +535,12 @@ function useCycle(count, seconds, paused) {
 function slotPlace(el) {
 	if (!el) return;
 	const b = el.getBoundingClientRect();
+	// ⚠️ 扩展侧改版：上下排列（stacked）时探头从**格子底边**开始，不再上移 12px。
+	//    原版减 12 是为了对准"收起态探头正是那 12px 虚影条"；上下排列下虚线已不常驻，
+	//    再减 12 会让探头从格子内部开始 ⇒ 上下错位、盖住本行迷你条。
+	const lift = el.closest && el.closest(".gacha-cal-sched-trow--stacked") ? 0 : 12;
 	el.style.setProperty("--rx", (b.left - 6) + "px");
-	el.style.setProperty("--ry", (b.bottom - 12) + "px");
+	el.style.setProperty("--ry", (b.bottom - lift) + "px");
 	el.style.setProperty("--rw", (b.width + (el.getAttribute("data-t") === "gacha" ? 12 : 14)) + "px");
 }
 // 当前被悬停的格子只记一个：滚动时只重定位它 —— 不再用 :hover 查询（那会强制样式计算与命中测试），

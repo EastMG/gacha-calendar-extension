@@ -686,3 +686,19 @@
    格子带 `z-index: var(--z)` 会形成层叠上下文，探头写在 2000 也**出不去**这个上下文，
    同桌的另一格（活动）仍按行序 900-i 把它整棵子树压住 ⇒ 必须让悬停中的格子整体升到所有行之上。 */
 .gacha-cal-sched-trow--stacked .gacha-cal-sched-cell:hover { z-index: 3000; }
+
+/* ── ①② 探头的动画修正 ────────────────────────────────────────────────
+   ① 探头内部**不再重播迷你条的出现动画**：
+      探头是靠 display:none → block 切换显示的，浏览器会让整棵子树的动画重新开始，
+      于是每次悬停展开都会再"长一遍"迷你条。这里在探头内部一律禁用出现动画。
+   ② 探头**展开不做动画**（瞬时出现）：原来的 clip-path 过渡在上下排列下会让
+      "展开即覆盖下一行"的过程看起来像抖动，直接去掉过渡。 */
+.gacha-cal-sched-trow--stacked .gacha-cal-sched-rest {
+	transition: none !important;
+}
+.gacha-cal-sched-trow--stacked .gacha-cal-sched-rest .gacha-cal-sched-tl i {
+	animation: none !important;
+}
+.gacha-cal-sched-trow--stacked .gacha-cal-sched-rest::after {
+	transition: none !important;
+}
