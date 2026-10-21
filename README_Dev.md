@@ -178,6 +178,12 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 
 > ⚠️ 记录一次改错：v0.2.14 先把它理解成"大卡内部改左右"（图标左、文字右），方向错了；
 > v0.2.15 纠正为"卡片分栏"。两者 CSS 都只动 `.gacha-cal-sched-slot` / `.gacha-cal-slot-more` 的外层排布。
+
+> ⚠️ 第二条教训（尺寸必须由**盒子**决定）：`.gacha-cal-slot-ring` 是 `position:relative` 的
+> 132×132 盒，图标 `.gacha-cal-slot-ic` 用 `inset:0` 相对**盒子**居中。只缩盒内 `svg`
+> （132→112）而盒子不变 ⇒ 圆环中心 56、图标中心 66，错开 10px = 看起来"大图标歪了"。
+> 正解：改盒子的 `width/height`（96×96）、`svg{width:100%;height:100%}`、图标固定 60×60。
+> 实测三者中心偏差为 0。
 开启开关时 `background.js` 只切换 `chrome.action` 的 popup，不再打开标签页；关闭时恢复原 popup。
 
 > ⚠️ **要改新面板，请先改上游插件再重新移植**，不要在 `schedule-view.js` 里直接改，

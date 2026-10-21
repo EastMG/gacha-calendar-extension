@@ -708,13 +708,29 @@
 	gap: 10px;
 }
 
-/* 左右分栏下，左列的大环略收一档，右列三条能显示更多字 */
+/* ── 左列大卡：尺寸与紧凑度 ──────────────────────────────────────────────
+   ⚠️ 必须让**盒子**决定尺寸：.gacha-cal-slot-ring 是 position:relative 的 132×132 盒，
+      图标 .gacha-cal-slot-ic 用 inset:0 相对**盒子**居中。
+      v0.2.15 只缩了盒内的 svg（112）而盒子仍是 132 ⇒ 圆环中心 56、图标中心 66，
+      两者错开 10px，看起来就是"大图标歪了"。正解是改盒子尺寸、svg 撑满 100%。
+   同时压紧左列高度：环 132→96、图标 86→60，文字行间距一并收紧。 */
+.gacha-cal-sched-slot .gacha-cal-slot-ring {
+	width: 96px;
+	height: 96px;
+	margin-top: 0;
+}
 .gacha-cal-sched-slot .gacha-cal-slot-ring > svg {
-	width: 112px;
-	height: 112px;
+	width: 100%;
+	height: 100%;
 }
 .gacha-cal-sched-slot .gacha-cal-slot-ic > img,
 .gacha-cal-sched-slot .gacha-cal-slot-ic > span {
-	width: 74px !important;
-	height: 74px !important;
+	width: 60px !important;
+	height: 60px !important;
+	border-radius: 16px !important;
 }
+/* 文字行距收紧（原值 11 / 1 / 6 / 3） */
+.gacha-cal-sched-slot .gacha-cal-slot-gn { margin-top: 5px; }
+.gacha-cal-sched-slot .gacha-cal-slot-days { margin-top: 0; }
+.gacha-cal-sched-slot .gacha-cal-slot-ttl { margin-top: 2px; }
+.gacha-cal-sched-slot .gacha-cal-slot-sub { margin-top: 1px; }
