@@ -737,7 +737,7 @@ function scheduleGlanceSegs(within24, within7) {
 		{ label: "7 天内 ", n: within7, tail: " 条" }
 	];
 }
-function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefreshText, scrapeInfo, scrapeLines, topMode, stacked, nearLimit }) {
+function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefreshText, scrapeInfo, scrapeLines, scrapeShort, topMode, stacked, nearLimit }) {
 	// ══ 扩展侧改版（2026-10-21，有意偏离上游）══════════════════════════════════
 	// topMode = "recent" | "slot"
 	//   顶部区域**同一个位置**只显示一样：近期列表 或 留白卡（设置页二选一）。
@@ -1040,7 +1040,10 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 		//    左：刷新成功/失败横幅（就是旧面板 .gacha-cal-scrape 那条，悬停给逐来源明细）；
 		//    右：上次更新 X 分钟前 + 刷新。
 		(0, react_jsx_runtime.jsxs)("div", { className: "gacha-cal-sched-foot", children: [
-			scrapeInfo ? (0, react_jsx_runtime.jsx)("span", { className: "gacha-cal-sched-scrape", title: (scrapeLines || []).join("\n"), children: scrapeInfo }) : null,
+			// 扩展侧改版：底部已有「失败横条」（带重试、逐来源明细）时，底栏只显示计数，
+			// 否则同一批来源名会在两处各出现一遍（用户 2026-10-21 反馈"怎么有两个失败提示"）。
+			// 悬停仍给完整明细（title 用 scrapeLines）。
+			scrapeInfo ? (0, react_jsx_runtime.jsx)("span", { className: "gacha-cal-sched-scrape", title: (scrapeLines || []).join("\n"), children: failed.length && scrapeShort ? scrapeShort : scrapeInfo }) : null,
 			(0, react_jsx_runtime.jsx)("span", { className: "gacha-cal-sched-when", title: [lastRefreshText, scrapeInfo].concat(scrapeLines || []).filter(Boolean).join("\n"), children: "上次更新 " + scheduleAgo(s.lastRefresh, now) }),
 			(0, react_jsx_runtime.jsx)("button", {
 				type: "button", className: "gacha-cal-sched-btn", disabled: refreshing,
