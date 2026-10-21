@@ -80,22 +80,13 @@ export function buildScrapeInfo(games, result) {
 	groups.forEach((grp) => {
 		info += ` ${grp.label}：${grp.names.join("、")}`;
 	});
-	// short：**不带来源名**的总体状态，用于"失败明细已经单独显示"的场合
-	// （底栏与底部失败横条同时出现时，避免同一批来源名重复两遍）。
-	const downNames = new Set(
-		list.filter((g) => {
-			const r = rec[g.id] || {};
-			return normalizeFail(r.gachaFail)?.kind === "down" || normalizeFail(r.eventFail)?.kind === "down";
-		}).map((g) => g.name)
-	);
-	const short = `成功 ${okCount}/${list.length}${skippedNote}` + (downNames.size ? ` · 失败 ${downNames.size} 源` : "");
 	const lines = list
 		.map((g) => {
 			const parts = entryFailParts(rec[g.id] || {});
 			return parts.length > 0 ? `${g.name} ${parts.map((p) => p.text).join("、")}` : "";
 		})
 		.filter(Boolean);
-	return { info, lines, short };
+	return { info, lines };
 }
 
 /**

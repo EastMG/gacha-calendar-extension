@@ -734,3 +734,22 @@
 .gacha-cal-sched-slot .gacha-cal-slot-days { margin-top: 0; }
 .gacha-cal-sched-slot .gacha-cal-slot-ttl { margin-top: 2px; }
 .gacha-cal-sched-slot .gacha-cal-slot-sub { margin-top: 1px; }
+/* ── 失败明细合并进常驻底栏（原滚动区底部的 .gacha-cal-sched-failbar 已移除）──
+   有失败时底栏左侧显示「⚠ + 第一条明细」，悬停看全部；右侧按钮变「重试」。 */
+.gacha-cal-sched-scrape--fail {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	color: var(--dsw-alias-state-warn-label, #9a4a06);
+}
+.gacha-cal-sched-scrape--fail > span {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.gacha-cal-sched-scrape--fail .gacha-cal-sched-fic {
+	width: 12px;
+	height: 12px;
+	flex: 0 0 auto;
+}

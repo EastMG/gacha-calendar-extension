@@ -123,7 +123,6 @@ async function loadState() {
 	const info = buildScrapeInfo(ordered, cached);
 	state.scrapeInfo = info.info;
 	state.scrapeLines = info.lines;
-	state.scrapeShort = info.short;
 }
 
 // —— 渲染 ——
@@ -145,7 +144,6 @@ function render() {
 		lastRefreshText: state.refreshedAt ? new Date(state.refreshedAt).toLocaleString() : "—",
 		scrapeInfo: state.scrapeInfo,
 		scrapeLines: state.scrapeLines,
-		scrapeShort: state.scrapeShort,
 		// 扩展侧改版的两个开关（见 schedule-view.js 顶部说明）
 		topMode: state.panelTop,
 		stacked: true,
