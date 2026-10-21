@@ -272,7 +272,10 @@ function renderEntry(game, index, order) {
 	swatch.type = "color";
 	swatch.className = "color-swatch";
 	swatch.value = isHexColor(effective) ? effective : "#888888";
-	swatch.title = (curColor ? "自定义颜色 " : "出厂色 ") + effective + "（点击修改）";
+	// 悬停只给色值本身（之前是"出厂色 #xxxxxx（点击修改）"，太啰嗦）
+	swatch.title = effective.toUpperCase();
+	// 无障碍标签保留语义（不可见）
+	swatch.setAttribute("aria-label", (curColor ? "自定义颜色 " : "出厂色 ") + effective.toUpperCase());
 	swatch.addEventListener("change", () => {
 		const map = asObject(cfg.gameColors);
 		map[game.id] = swatch.value;
