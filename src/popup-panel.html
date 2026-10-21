@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 	<head>
 		<meta charset="utf-8" />
@@ -21,13 +21,13 @@
 				overflow: hidden;
 			}
 			body {
-				background: #f2f3f5;
+				background: var(--dsw-alias-bg-base, #ffffff);
 				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI",
 					"Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
 			}
 			@media (prefers-color-scheme: dark) {
 				body {
-					background: #101013;
+					background: #151517;
 				}
 			}
 			/* 插件里 .gacha-cal-pop 是侧栏浮层（fixed + 690px + 阴影 + 限高滚动）。
@@ -43,6 +43,16 @@
 				box-shadow: none;
 				padding: 0;
 				z-index: auto;
+			}
+			/* 卡片在插件里是"浮起来的卡"：12px 圆角 + 1px 边框 + 0 8px 30px 的投影。
+			   但在 popup 里它**铺满整个窗口**：投影没有地方落，只会沿着窗口四边画成
+			   "方方正正的阴影"；圆角处又会漏出 body 底色。
+			   popup 的外框由浏览器窗口本身负责 ⇒ 卡片改为满铺：无色/无圆角/无阴影。 */
+			#root.gacha-cal-pop .gacha-cal-sched {
+				border: none;
+				border-radius: 0;
+				box-shadow: none;
+				height: 100%;
 			}
 		</style>
 	</head>
