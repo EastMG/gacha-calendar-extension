@@ -747,6 +747,7 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 	//   ⚠️ 目的是**节省宽度**（原版是 游戏 | 卡池 | 活动 三列并排）。
 	const TOP_SLOT = topMode === "slot";
 	const STACKED = stacked === true;
+	// 每行不再显示「卡池 / 活动」指示（2026-10-21 定稿：内容本身已足够区分）。
 	// 每游戏主题色覆盖表（面板侧；设置组件里另有一份同名的）。
 	// ⚠️ 必须在这里也定义一次：下面的行 --g 与留白卡 slotAccent 都在本组件里用它，
 	//    漏了就是 ReferenceError ⇒ 整个面板（连带插件 UI）挂不上。
@@ -862,23 +863,14 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 			]
 		});
 	};
-	// 上下排列时，每行左侧的「卡池 / 活动」小标（含类型图标）
-	const capOf = (side) => (0, react_jsx_runtime.jsxs)("div", {
-		className: "gacha-cal-sched-linecap", "data-t": side,
-		children: [
-			scheduleKindIcon(side, "gacha-cal-sched-tic"),
-			(0, react_jsx_runtime.jsx)("span", { children: side === "gacha" ? "卡池" : "活动" })
-		]
-	});
 	// 表格里的一格：名称 + 「档期 · 状态」+ 14 天迷你条。**不折叠不点开**：同格多条时露一条 + 「另有 N 条」
-	const cellView = (g, side, withCap) => {
+	const cellView = (g, side) => {
 		const isG = side === "gacha";
 		const list = cells.get(g.id + ":" + side) || [];
 		if (!list.length) {
 			return (0, react_jsx_runtime.jsxs)("div", {
 				className: "gacha-cal-sched-cell gacha-cal-sched-cell--none", "data-t": side,
 				children: [
-					withCap ? capOf(side) : null,
 					(0, react_jsx_runtime.jsx)("div", { className: "gacha-cal-sched-cn", children: "—" }),
 					(0, react_jsx_runtime.jsx)("div", { className: "gacha-cal-sched-cm gacha-cal-sched-num", children: isG ? "该来源无卡池数据" : "该来源无活动数据" }),
 					scheduleBars(null, days)
@@ -934,7 +926,7 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 			onPointerLeave: (e) => slotLeave(e.currentTarget),
 
 			children: [
-				withCap ? capOf(side) : null, itemOf(it, "first"),
+				itemOf(it, "first"),
 				rest.length ? (0, react_jsx_runtime.jsx)("div", {
 					className: "gacha-cal-sched-rest",
 					onWheel: slotWheel,
@@ -957,7 +949,7 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 				(0, react_jsx_runtime.jsx)("span", { className: "gacha-cal-sched-gn", children: g.name })
 			] }),
 			STACKED
-				? (0, react_jsx_runtime.jsx)("div", { className: "gacha-cal-sched-lines", children: [cellView(g, "gacha", true), cellView(g, "event", true)] })
+				? (0, react_jsx_runtime.jsx)("div", { className: "gacha-cal-sched-lines", children: [cellView(g, "gacha"), cellView(g, "event")] })
 				: [cellView(g, "gacha"), cellView(g, "event")]
 		]
 	});

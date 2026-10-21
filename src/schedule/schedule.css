@@ -638,22 +638,7 @@
 	grid-template-rows: auto auto;
 	min-width: 0;
 	gap: 2px;
-}
-/* 每行左侧的「卡池 / 活动」小标 */
-.gacha-cal-sched-linecap {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	margin-bottom: 1px;
-	font-size: 10.5px;
-	font-weight: 600;
-	line-height: 1;
-	color: var(--dsw-alias-label-tertiary, #81858c);
-}
-.gacha-cal-sched-linecap[data-t="gacha"] { color: var(--dsw-alias-state-business-primary, #4176e6); }
-.gacha-cal-sched-linecap[data-t="event"] { color: var(--dsw-alias-state-warn-label, #dd8629); }
-.gacha-cal-sched-linecap .gacha-cal-sched-tic { width: 11px; height: 11px; }
-/* 两行之间加一条细分隔线（第一行不加） */
+}/* 两行之间加一条细分隔线（第一行不加） */
 .gacha-cal-sched-trow--stacked .gacha-cal-sched-cell {
 	padding: 3px 0 5px;
 	border-top: 1px solid var(--dsw-alias-border-l1, #0000000a);
