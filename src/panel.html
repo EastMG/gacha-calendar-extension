@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>二游日历 · 日程</title>
+		<link rel="stylesheet" href="schedule.css" />
+		<style>
+			:root {
+				color-scheme: light dark;
+			}
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				min-height: 100vh;
+				background: #f2f3f5;
+				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI",
+					"Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+				display: flex;
+				justify-content: center;
+				align-items: flex-start;
+				padding: 18px 16px 40px;
+				box-sizing: border-box;
+			}
+			@media (prefers-color-scheme: dark) {
+				body {
+					background: #101013;
+				}
+			}
+			/* 插件里 .gacha-cal-pop 是侧栏浮层（position:fixed + 690px + 阴影 + 限高滚动）。
+			   独立页面里它应当是普通文档流容器：取消定位与限高，尺寸由设计宽度决定。 */
+			#root.gacha-cal-pop {
+				position: static;
+				width: 690px;
+				max-width: 100%;
+				max-height: none;
+				height: auto;
+				overflow: visible;
+				background: transparent;
+				border: none;
+				box-shadow: none;
+				padding: 0;
+				z-index: auto;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="root" class="gacha-cal-pop gacha-cal-pop--sched"></div>
+		<script type="module" src="panel.js"></script>
+	</body>
+</html>

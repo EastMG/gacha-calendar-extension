@@ -156,3 +156,30 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	// 异步响应：保持消息通道打开
 	return true;
 });
+
+// —— 实验特性「新日程面板」的入口切换 ——
+//
+// 新面板是整块日程视图（设计宽 690px、高度随条目增长到 ~1100px），远超 popup 的尺寸上限，
+// 因此开启它时把工具栏改成"直接打开独立页面"：popup 置空 + 由 onClicked 建标签页。
+// 关闭时恢复 popup.html，行为与之前完全一致。
+const PANEL_PAGE = "panel.html";
+
+async function syncActionPopup() {
+	try {
+		const { newPanel } = await chrome.storage.local.get("newPanel");
+		await chrome.action.setPopup({ popup: newPanel === true ? "" : "popup.html" });
+	} catch {
+		/* 设置读取失败时保持 manifest 里的默认 popup */
+	}
+}
+
+chrome.runtime.onInstalled.addListener(syncActionPopup);
+chrome.runtime.onStartup.addListener(syncActionPopup);
+chrome.storage.onChanged.addListener((changes, area) => {
+	if (area === "local" && changes.newPanel) syncActionPopup();
+});
+// 仅在 popup 被置空时触发（即新面板开启时）
+chrome.action.onClicked.addListener(() => {
+	chrome.tabs.create({ url: chrome.runtime.getURL(PANEL_PAGE) });
+});
+syncActionPopup();

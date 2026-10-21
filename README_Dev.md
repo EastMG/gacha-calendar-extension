@@ -50,6 +50,11 @@ src/entry-meta.js      来源显示名口径（与 core 的 getDefaultSourceName
 src/visibility.js      展示/隐藏判定与写回
 src/popup.*            面板
 src/options.*          设置页
+src/panel.html         新日程面板（实验）的页面宿主
+src/panel.js           新日程面板的挂载与数据装配（React root / 刷新 / 时钟）
+src/schedule/          新日程面板：一比一移植自 DSH 插件的组件与样式
+  schedule-view.js      组件本体（原样移植，见「设计要点 5」）
+  schedule.css          从插件提取的 sched/slot 样式 + DSH 主题变量兜底
 src/verify-boot.js     启动自检（仅 `--verify` 构建时打进 background.js，正常构建不含）
 build.mjs              构建（内联 core + 校验清单 + 打包 zip）
 verify.mjs             静态校验
@@ -143,6 +148,30 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 `fetch` 的 `Referer` 在部分浏览器实现中是禁止由脚本设置的。本扩展在 service worker 里尝试设置
 （比页面上下文权限更高），但**不能保证一定生效**。若某个源因校验来源而拒绝，core 会把它记为
 `down` 并沿用上次成功数据、在面板上标出——不会静默显示错误内容。
+
+### 5. 新日程面板：从 DSH 插件一比一移植（实验特性）
+
+新日程面板**不是重写**，而是把插件的组件与样式**原样搬过来**，只在边界上做适配。
+
+| 部分 | 来源 | 处理 |
+|---|---|---|
+| 组件本体 | 插件 `src/client/80-components.js` 第 66-98 行（GameIcon）、第 192-1082 行（日程常量 / 纯函数 / 留白卡 SlotCard / ScheduleView） | 原样移出到 `src/schedule/schedule-view.js`。该文件是 JSX 的**转译产物**（直接调 `react/jsx-runtime`），因此保留其原始代码，不改写渲染逻辑 |
+| 样式 | 插件 `src/client/70-styles.js` 的 `STYLE` | 按选择器提取 sched / slot / marq / inner 相关规则到 `src/schedule/schedule.css`，**规则本身零改动** |
+| 主题变量 | 插件依赖 DSH 宿主的 `--dsw-alias-*` | 扩展里没有宿主，故按 DSH 主题包的**真实取值**补齐兜底（浅色为默认，深色走 `prefers-color-scheme`） |
+| 依赖 | `react`、`react/jsx-runtime` 由宿主注入 | 改为 npm 依赖，构建时以**生产版**内联（见下） |
+| 其它纯函数 | `60-helpers.js` / `15-env.js` / `25-parser-shared.js` | `normalizeFail`/`cleanRoleNames`/`parseDisplayRange`/`sideFailText`/`buildRowTitle` 从 `view-helpers.js` 引入（同一份实现）；时区换算（`sourceOffsetMinutes`/`sourceWallParts`）与窗口格式化（`fmtWindow` 等）随组件一并补齐 |
+| 数据装配 | 插件 `CalendarPanel` 的 `visible → games` 合并 | 在 `src/panel.js` 里按同样的字段拼装（banner / event / roles / datesRaw / hover / 失败状态），并补 `tz` 与主题色 |
+
+**为什么是独立页面而不是 popup**：该视图设计宽 690px、高度随条目增长（23 行约 2500px），
+远超浏览器 popup 的尺寸上限（约 800×600）。所以开启开关后，`background.js` 会把
+`chrome.action` 的 popup 置空，改由 `onClicked` 打开 `panel.html` 标签页；关闭时恢复原 popup。
+
+> ⚠️ **要改新面板，请先改上游插件再重新移植**，不要在 `schedule-view.js` 里直接改，
+> 否则两边实现会漂移（该文件顶部有同样的提示）。
+
+> 📌 React 必须按生产版打包：`build.mjs` 里传了 `--define:process.env.NODE_ENV="production"`。
+> 漏了它，esbuild 会保留开发版分支，`panel.js` 会从 ~700KB 涨到 ~1.5MB 并带调试告警。
+
 
 ## 测试
 

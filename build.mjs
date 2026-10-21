@@ -62,7 +62,10 @@ const STATIC = [
 	["src/popup.html", "popup.html"],
 	["src/popup.css", "popup.css"],
 	["src/options.html", "options.html"],
-	["src/options.css", "options.css"]
+	["src/options.css", "options.css"],
+	// 新日程面板（实验特性）的页面宿主与样式
+	["src/panel.html", "panel.html"],
+	["src/schedule/schedule.css", "schedule.css"]
 ];
 
 /**
@@ -126,6 +129,9 @@ function bundle(entry, outfile) {
 			"--target=chrome102",
 			"--platform=browser",
 			"--legal-comments=none",
+			// React 的入口靠这个环境变量在 开发版/生产版 之间二选一；
+			// 不定义的话 esbuild 会保留两条分支、运行时落到**开发版**（体积大 5 倍且带调试告警）。
+			'--define:process.env.NODE_ENV="production"',
 			"--log-level=warning",
 			`--outfile=${outfile}`
 		],
@@ -197,7 +203,7 @@ function main() {
 			if (!same) bad++;
 		}
 		// 打包产物（js）与图标也要比
-		for (const rel of ["popup.js", "options.js"]) {
+		for (const rel of ["popup.js", "options.js", "panel.js"]) {
 			if (!fs.existsSync(path.join(DIST, rel))) {
 				console.error(`  缺失  ${rel}（需先 build）`);
 				bad++;
@@ -225,6 +231,8 @@ function main() {
 	}
 	bundle("popup.js", path.join(DIST, "popup.js"));
 	bundle("options.js", path.join(DIST, "options.js"));
+	// 新日程面板：单独成包（内含 React 与一比一移植的 ScheduleView）
+	bundle("panel.js", path.join(DIST, "panel.js"));
 	// --verify：把"启动自检"打进 background.js（service worker 一定会执行，是验证的可靠落点）
 	if (VERIFY) {
 		const orig = fs.readFileSync(path.join(SRC, "background.js"), "utf8");

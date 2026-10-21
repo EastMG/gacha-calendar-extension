@@ -33,6 +33,7 @@ const el = {
 	entries: document.getElementById("entries"),
 	allowedHosts: document.getElementById("allowed-hosts"),
 	autoRefresh: document.getElementById("autoRefresh"),
+	newPanel: document.getElementById("newPanel"),
 	refreshMinutes: document.getElementById("refreshMinutes"),
 	resetOrder: document.getElementById("resetOrder"),
 	removedCard: document.getElementById("removed-card"),
@@ -55,7 +56,9 @@ let cfg = {
 	customUrls: {},
 	customEventUrls: {},
 	autoRefresh: true,
-	refreshMinutes: 24 * 60
+	refreshMinutes: 24 * 60,
+	// 实验特性：新日程面板（默认关，与 DSH 插件同键名同语义）
+	newPanel: false
 };
 /** 生效中的条目（core 已按 removed 过滤）元信息。 */
 let allGames = [];
@@ -164,6 +167,7 @@ function render() {
 	const order = orderedGames();
 	el.count.textContent = String(allGames.length);
 	el.autoRefresh.checked = cfg.autoRefresh !== false;
+	if (el.newPanel) el.newPanel.checked = cfg.newPanel === true;
 	renderRefreshOptions();
 
 	const frag = document.createDocumentFragment();
@@ -460,6 +464,8 @@ async function runSelfCheck() {
 // —— 入口 ——
 
 el.autoRefresh.addEventListener("change", () => commit({ autoRefresh: el.autoRefresh.checked }));
+// 实验特性：切换后由 background 同步工具栏行为（开启=直接打开日程页面，关闭=弹 popup）
+if (el.newPanel) el.newPanel.addEventListener("change", () => commit({ newPanel: el.newPanel.checked }));
 el.refreshMinutes.addEventListener("change", () => commit({ refreshMinutes: Number(el.refreshMinutes.value) }));
 el.resetOrder.addEventListener("click", () => commit({ order: null }));
 el.selfCheck.addEventListener("click", () => runSelfCheck());
@@ -497,7 +503,8 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 			"customUrls",
 			"customEventUrls",
 			"autoRefresh",
-			"refreshMinutes"
+			"refreshMinutes",
+			"newPanel"
 		])
 	]);
 	allGames = games;
@@ -513,7 +520,8 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 			typeof stored.customEventUrls === "string" ? parseJson(stored.customEventUrls, {}) : stored.customEventUrls
 		),
 		autoRefresh: stored.autoRefresh !== false,
-		refreshMinutes: Number(stored.refreshMinutes) || 24 * 60
+		refreshMinutes: Number(stored.refreshMinutes) || 24 * 60,
+		newPanel: stored.newPanel === true
 	};
 	render();
 })().catch((err) => {

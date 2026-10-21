@@ -102,7 +102,7 @@ const iconMissing = dom.iconHosts.filter((h) => !dom.manifestHosts.includes(h));
 check("图标域名也在 host_permissions 里", iconMissing.length === 0, iconMissing.length ? iconMissing.join(", ") : `${dom.iconHosts.length} 个图标域名均已授权`);
 
 console.log("\n=== 4. 零远程代码（MV3 硬性要求）===");
-const jsFiles = ["background.js", "popup.js", "options.js", "core-version.js"];
+const jsFiles = ["background.js", "popup.js", "options.js", "panel.js", "core-version.js"];
 const remoteCodePatterns = [
 	{ re: /\bimport\s*\(\s*["'`]https?:/g, label: "动态 import 远程 URL" },
 	{ re: /\bimportScripts\s*\(/g, label: "importScripts" },
@@ -149,6 +149,15 @@ check(`UI 产物内联了 core（含 ${CORE_MARKERS.length} 个来源特征域�
 // （不设上界，避免每次扩游戏都要调；也不去搜游戏名——见下方说明）
 const popupKb = Math.round(popupSrc.length / 1024);
 check("popup.js 体积达到内联 core 的量级（>250 KB）", popupSrc.length > 250 * 1024, `${popupKb} KB`);
+
+// 新日程面板（实验特性）：页面宿主、样式与打包产物必须都在 dist 里，
+// 否则开启开关后点工具栏会打不开页面（且不会有任何提示）。
+for (const f of ["panel.html", "panel.js", "schedule.css"]) {
+	check(`新面板产物存在：${f}`, fs.existsSync(path.join(DIST, f)));
+}
+const panelSrc = fs.existsSync(path.join(DIST, "panel.js")) ? fs.readFileSync(path.join(DIST, "panel.js"), "utf8") : "";
+check("panel.js 内联了 React（生产版，含 react-dom 特征）", /react-dom|Minified React error/.test(panelSrc), `${Math.round(panelSrc.length / 1024)} KB`);
+check("panel.js 内含日程视图根类名", panelSrc.includes("gacha-cal-sched"));
 
 // core 的条目数据：**从 core 运行时取**，不写死数字（core 已从 11 款扩到 28 款）。
 // 注意：这里**不去产物里搜游戏名**。实测产物中中文被 esbuild 以大写 \uXXXX 转义，
