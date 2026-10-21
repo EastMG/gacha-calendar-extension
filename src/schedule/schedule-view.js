@@ -810,8 +810,8 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 	// 「近期」默认只列前 10 条（已按紧迫度排序），其余靠每 4 秒换一批（取模环绕）循环看到；
 	// 底部按钮「展开全部 N 条」= React state（nearAll），展开时列全部并停住循环，再点击是「收起」。
 	// ——面板里**没有**「还有 N 条」这个文案，也不再走纯 CSS 的 checkbox。
-	// 「近期」每批显示几条。默认 10（上游行为）；popup 里传 3 —— 600px 高度下要给游戏表留空间。
-	const SCHEDULE_NEAR_LIMIT = Number.isFinite(nearLimit) && nearLimit > 0 ? Math.floor(nearLimit) : 10;
+	// 「近期」每批显示几条（默认最多 2 条；展开后仍可看全部，其余靠 4s 轮换）。
+	const SCHEDULE_NEAR_LIMIT = Number.isFinite(nearLimit) && nearLimit > 0 ? Math.floor(nearLimit) : 2;
 	const scheduleNear = (x) => (x.state === "wait"
 		? x.startTs != null && x.startTs - now.getTime() <= SCHEDULE_NEAR_MS
 		: x.state === "live" && x.remain <= SCHEDULE_NEAR_MS);

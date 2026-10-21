@@ -21,8 +21,8 @@ const engine = createEngine({ transport, storage: createStorage() });
 
 // 宿主形态：工具栏 popup（520×600）或独立页面（宽、不限高）。
 // popup 里高度只有 600px，「近期」每批只显示 3 条，给下面的游戏表留空间。
-const IS_POPUP = document.body.classList.contains("popup-host");
-const NEAR_LIMIT = IS_POPUP ? 3 : 10;
+// 「近期」默认最多显示 2 条（展开后仍可看全部）。
+const NEAR_LIMIT = 2;
 const DEFAULT_REFRESH_MINUTES = 24 * 60;
 
 const state = {

@@ -169,8 +169,11 @@ npm run test:domains       # 测守卫自身：该失败时失败、该通过时
 | `popup-panel.html` | 520 × 600（popup 硬上限 800×600） | **工具栏弹窗（默认）**：高度固定 ⇒ `.gacha-cal-sched-body` 内部滚动、底栏常驻 |
 | `panel.html` | 520 × 不定高 | 独立页面（需要大画布时用，如截图/调试） |
 
-`panel.js` 通过 `body.popup-host` 判断宿主：popup 下把「近期」每批从 10 条收窄到 **3 条**
-（`nearLimit`），给下面的游戏表留出空间 —— 实测首屏可见「概览 + 近期 3 条 + 2 个完整游戏行 + 底栏」。
+`panel.js` 通过 `body.popup-host` 判断宿主；「近期」默认最多显示 **2 条**（`nearLimit: 2`，
+展开后仍可看全部、其余靠 4s 轮换）—— 实测 popup 首屏可见「概览 + 近期 2 条 + 2 个完整游戏行 + 底栏」。
+
+留白卡（`SlotCard`）的版式也改成了**左右结构**：进度环 + 图标在左、四行文字（游戏名 / 剩余天数 /
+标题 / 档期）在右，卡片高度 401 → 302px。
 开启开关时 `background.js` 只切换 `chrome.action` 的 popup，不再打开标签页；关闭时恢复原 popup。
 
 > ⚠️ **要改新面板，请先改上游插件再重新移植**，不要在 `schedule-view.js` 里直接改，
