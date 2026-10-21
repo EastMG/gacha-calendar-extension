@@ -535,10 +535,10 @@ function useCycle(count, seconds, paused) {
 function slotPlace(el) {
 	if (!el) return;
 	const b = el.getBoundingClientRect();
-	// ⚠️ 扩展侧改版：上下排列（stacked）时探头从**格子底边**开始，不再上移 12px。
-	//    原版减 12 是为了对准"收起态探头正是那 12px 虚影条"；上下排列下虚线已不常驻，
-	//    再减 12 会让探头从格子内部开始 ⇒ 上下错位、盖住本行迷你条。
-	const lift = el.closest && el.closest(".gacha-cal-sched-trow--stacked") ? 0 : 12;
+	// 上移 12px 让展开态与**收起态的那 12px 虚影条**对齐（原版行为）。
+	// 扩展侧改版曾按"虚影条不常驻"把上下排列的 lift 设为 0，但虚影条已恢复常驻
+	// （它是"此处可展开"的提示）⇒ 这里回到统一的 12px，展开时正好从虚影条的位置拉开。
+	const lift = 12;
 	el.style.setProperty("--rx", (b.left - 6) + "px");
 	el.style.setProperty("--ry", (b.bottom - lift) + "px");
 	el.style.setProperty("--rw", (b.width + (el.getAttribute("data-t") === "gacha" ? 12 : 14)) + "px");
