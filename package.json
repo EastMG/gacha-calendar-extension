@@ -1,6 +1,6 @@
 {
   "name": "gacha-calendar-extension",
-  "version": "0.2.26",
+  "version": "0.2.27",
   "private": true,
   "description": "二游日历：28 款二次元手游的当期卡池与活动起止速查（Chrome/Edge MV3 扩展）。",
   "type": "module",

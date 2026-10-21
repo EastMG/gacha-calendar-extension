@@ -196,7 +196,7 @@ input[type="text"] {
 .grid-head,
 .entry {
 	display: grid;
-	grid-template-columns: minmax(150px, 1fr) 56px minmax(150px, 1.1fr) minmax(150px, 1.1fr) 92px;
+	grid-template-columns: minmax(150px, 1fr) 56px 56px minmax(150px, 1.1fr) minmax(150px, 1.1fr) 92px;
 	gap: 8px;
 	align-items: center;
 }
@@ -298,4 +298,39 @@ select:disabled {
 /* 「需开启「新日程面板」」这句只在**禁用态**有意义：启用后它就成了假提示 ⇒ 隐藏 */
 .row:not(.is-off) .hint em {
 	display: none;
+}
+/* 条目强调色：原生取色器做成小圆角色块；未自定义时虚线边框表示"默认" */
+.color-cell {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+}
+input[type="color"].color-swatch {
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: none;
+	cursor: pointer;
+	appearance: none;
+	-webkit-appearance: none;
+}
+input[type="color"].color-swatch.is-default {
+	border-style: dashed;
+}
+input[type="color"].color-swatch::-webkit-color-swatch-wrapper {
+	padding: 2px;
+}
+input[type="color"].color-swatch::-webkit-color-swatch {
+	border: none;
+	border-radius: 4px;
+}
+.btn.color-reset {
+	padding: 0;
+	width: 20px;
+	height: 20px;
+	line-height: 1;
+	border-radius: 999px;
 }

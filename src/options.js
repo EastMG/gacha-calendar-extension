@@ -98,7 +98,7 @@ function builtinNameMap() {
 }
 
 /** 持久化为 JSON 字符串的三个键（chrome.storage 里存字符串，DSH 插件同约定）。 */
-const JSON_KEYS = ["customUrls", "customEventUrls", "customEntries"];
+const JSON_KEYS = ["customUrls", "customEventUrls", "customEntries", "gameColors"];
 
 function asObject(v) {
 	return v && typeof v === "object" && !Array.isArray(v) ? v : {};
@@ -251,6 +251,38 @@ function renderEntry(game, index, order) {
 	});
 	showCell.appendChild(cb);
 	row.appendChild(showCell);
+
+	// 强调色：原生取色器（点色块选色）＋「↺」恢复默认
+	// 存储形如 { 游戏id: "#rrggbb" }；没有该键 = 用 core 算出的出厂色。
+	const colors = asObject(cfg.gameColors);
+	const curColor = typeof colors[game.id] === "string" ? colors[game.id] : "";
+	const colorCell = document.createElement("div");
+	colorCell.className = "cell-center color-cell";
+	const swatch = document.createElement("input");
+	swatch.type = "color";
+	swatch.className = "color-swatch" + (curColor ? "" : " is-default");
+	swatch.value = /^#[0-9a-fA-F]{6}$/.test(curColor) ? curColor : "#888888";
+	swatch.title = curColor ? "自定义颜色（点击修改）" : "默认颜色（点击自定义）";
+	swatch.addEventListener("change", () => {
+		const map = asObject(cfg.gameColors);
+		map[game.id] = swatch.value;
+		commit({ gameColors: map });
+	});
+	colorCell.appendChild(swatch);
+	if (curColor) {
+		const reset = document.createElement("button");
+		reset.type = "button";
+		reset.className = "btn mini color-reset";
+		reset.textContent = "↺";
+		reset.title = "恢复默认颜色";
+		reset.addEventListener("click", () => {
+			const map = asObject(cfg.gameColors);
+			delete map[game.id];
+			commit({ gameColors: map });
+		});
+		colorCell.appendChild(reset);
+	}
+	row.appendChild(colorCell);
 
 	// 卡池来源 / 活动来源
 	const gachaSel = renderSourceSelect(game, urls, false);
@@ -528,7 +560,8 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 			"autoRefresh",
 			"refreshMinutes",
 			"newPanel",
-			"panelTop"
+			"panelTop",
+			"gameColors"
 		])
 	]);
 	allGames = games;
@@ -546,7 +579,9 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		autoRefresh: stored.autoRefresh !== false,
 		refreshMinutes: Number(stored.refreshMinutes) || 24 * 60,
 		newPanel: stored.newPanel !== false,
-		panelTop: stored.panelTop === "recent" ? "recent" : "slot"
+		panelTop: stored.panelTop === "recent" ? "recent" : "slot",
+		// 落盘是 JSON 字符串；这里解析回对象（{ 游戏id: "#rrggbb" }）
+		gameColors: parseJson(stored.gameColors, {})
 	};
 	render();
 })().catch((err) => {
