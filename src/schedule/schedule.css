@@ -680,65 +680,41 @@
 .gacha-cal-sched-trow--stacked .gacha-cal-sched-rest .gacha-cal-sched-tl i {
 	animation: none !important;
 }
-/* ── 留白卡：改成「左图标 / 右文字」的左右布局 ────────────────────────────
-   原版是上下结构：环+图标居中在上，游戏名 / 剩余天数 / 标题 / 档期依次居中排在下面。
-   左右布局把图标固定到左侧、四项文字右对齐排成四行，卡片更矮更宽，也更像"信息卡"。 */
-.gacha-cal-slot-slide {
+
+/* ── 留白卡：整体改左右分栏 ──────────────────────────────────────────────
+   原版是上下结构：上面一个大的主卡（进度环 + 图标 + 游戏名/剩余天数/标题/档期），
+   下面三条小的（接下来三项）。
+   改为**左右结构**：左边那个大的、右边那三条小的。
+   ⚠️ 注意：主卡**内部**保持原样（环在上、文字居中在下），这里只改卡片的分栏。 */
+.gacha-cal-sched-slot {
 	display: grid;
-	grid-template-columns: auto minmax(0, 1fr);
-	grid-template-rows: auto auto auto auto;
-	column-gap: 14px;
+	grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+	column-gap: 16px;
 	align-items: center;
-	justify-items: start;
 }
-/* 图标 + 进度环整体跨四行，垂直居中 */
-.gacha-cal-slot-ring {
+.gacha-cal-slot-cine {
 	grid-column: 1;
-	grid-row: 1 / span 4;
-	align-self: center;
+	min-width: 0;
 }
-/* 环稍微收小，给右侧文字留宽度 */
-.gacha-cal-slot-ring > svg {
-	width: 104px;
-	height: 104px;
-}
-.gacha-cal-slot-ic > img,
-.gacha-cal-slot-ic > span {
-	width: 68px !important;
-	height: 68px !important;
-}
-/* 右侧四行：全部左对齐 */
-.gacha-cal-slot-gn {
-	grid-column: 2;
-	grid-row: 1;
-	margin-top: 0;
-	width: 100%;
-	text-align: left;
-	font-size: 14px;
-}
-.gacha-cal-slot-days {
-	grid-column: 2;
-	grid-row: 2;
-	justify-content: flex-start;
-	margin-top: 3px;
-}
-.gacha-cal-slot-ttl {
-	grid-column: 2;
-	grid-row: 3;
-	width: 100%;
-	margin-top: 5px;
-	text-align: left;
-	white-space: normal;
-}
-.gacha-cal-slot-sub {
-	grid-column: 2;
-	grid-row: 4;
-	width: 100%;
-	margin-top: 3px;
-	text-align: left;
-	white-space: normal;
-}
-/* 后面那条"接下来三条"仍留在下方整行（它们是列表，不适合塞进右列） */
+/* 右侧三条：从"整行在下"改成"右列"，分隔线由上方横线改为左侧竖线 */
 .gacha-cal-slot-more {
-	margin-top: 10px;
+	grid-column: 2;
+	align-self: center;
+	margin-top: 0;
+	padding-top: 0;
+	padding-left: 14px;
+	border-top: none;
+	border-left: 1px solid color-mix(in oklab, var(--dsw-alias-label-primary, #1f2329) 8%, transparent);
+	gap: 10px;
+}
+
+/* 左右分栏下，左列的大环略收一档，右列三条能显示更多字 */
+.gacha-cal-sched-slot .gacha-cal-slot-ring > svg {
+	width: 112px;
+	height: 112px;
+}
+.gacha-cal-sched-slot .gacha-cal-slot-ic > img,
+.gacha-cal-sched-slot .gacha-cal-slot-ic > span {
+	width: 74px !important;
+	height: 74px !important;
 }
