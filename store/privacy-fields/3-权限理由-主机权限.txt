@@ -1,8 +1,20 @@
+【主机权限 host_permissions，共 49 条】
+
 本扩展的功能是抓取各游戏官方公告页与社区 Wiki 上的公开活动/卡池信息，因此需要访问这些来源站。浏览器要求扩展在发起跨域请求前静态声明目标域名，所以这些域名逐个列在 manifest 中。
 
 需要说明的关键点：
-1) 未申请 <all_urls>，也没有任何通配的全网访问权限，只声明了实际抓取用到的具体域名；
-2) 这些域名对应的是原神、崩坏：星穹铁道、绝区零、明日方舟、蔚蓝档案、赛马娘、Fate/Grand Order 等游戏的官方公告页与社区 Wiki（Bwiki / PRTS / FZ Wiki / GameKee / GameTora 等）；
-3) 其中 `sekai-world.github.io` / `raw.githubusercontent.com` 是「世界计划」社区 Wiki 的静态数据源（托管于 GitHub Pages），`gh-proxy.com` 是该社区提供的只读镜像代理 —— 因为 GitHub Pages 不返回跨域头，扩展必须经该镜像才能读到同一份公开数据；二者读的都是同一个开源数据集；
-4) 请求仅用于读取公开页面内容，不向这些站点发送任何用户数据；
-5) 本扩展不包含 content script，因此不会读取或修改用户正在浏览的任何网页内容。
+1) 未申请 <all_urls>，也没有任何"所有网站"的权限。49 条里 47 条是具体域名；另有 2 条同属 GameKee：https://gamekee.com/* 与 https://*.gamekee.com/*。
+2) 为什么要 1 条子域通配：GameKee（蔚蓝档案）的内容 CDN 地址不是固定写在页面里的，而是由接口响应中的 content_cdn 字段下发（实测指向 api-cdn.gamekee.com）。该子域无法预先逐个列成具体域名，因此按域授权；除这一条外没有任何通配权限。
+3) 这些域名对应的是原神、崩坏：星穹铁道、绝区零、明日方舟、蔚蓝档案、赛马娘、Fate/Grand Order 等游戏的官方公告页与社区 Wiki（Bwiki / PRTS / FZ Wiki / GameKee / GameTora 等），另有少数用于加载游戏图标的静态资源域名；
+4) 其中 sekai-world.github.io / raw.githubusercontent.com 是「世界计划」社区 Wiki 的静态数据源（托管于 GitHub Pages），gh-proxy.com 是该社区提供的只读镜像代理 —— 因为 GitHub Pages 不返回跨域头，扩展必须经该镜像才能读到同一份公开数据；二者读的都是同一个开源数据集；
+5) 请求仅用于读取公开页面内容，不向这些站点发送任何用户数据；
+6) 本扩展不包含 content script，因此不会读取或修改用户正在浏览的任何网页内容。
+
+【声明式网络请求权限 declarativeNetRequestWithHostAccess】
+
+仅用于给一处来源补 Referer 请求头。GameKee 的内容数据放在上述 CDN 子域上，该 CDN 会校验 Referer，而浏览器的 fetch 不允许扩展自行设置 Referer。为此用 declarativeNetRequest 的 modifyHeaders 规则，在请求发出前补上 Referer: https://www.gamekee.com/。
+
+关键点：
+1) 规则只匹配 api-cdn.gamekee.com（已授权的域名），不拦截、不修改其它任何网站的请求；
+2) 只改请求头，不读取、不上传任何数据，不涉及响应内容；
+3) 未申请 declarativeNetRequest（可拦截全站请求的那个权限），只用 withHostAccess 变体。

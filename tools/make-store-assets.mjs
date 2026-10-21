@@ -162,6 +162,64 @@ function inject(html, stub, tail = "") {
 
 // —— 新日程面板的 popup 宿主（520×600）——
 const popupPanelHtml = fs.readFileSync(path.join(ROOT, "src", "popup-panel.html"), "utf8");
+
+// —— 商店截图舞台（1280×800：左侧品牌 + 右侧新面板 iframe）——
+// 说明：store 只接受 640×480 或 1280×800；面板本身是 520×600，
+// 所以套一层舞台做「品牌介绍 + 面板」的整幅图，截图时直接拍这个页面。
+{
+	const stage = `<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8" />
+		<title>二游日历 · 商店截图</title>
+		<style>
+			* { box-sizing: border-box; }
+			html, body { margin: 0; padding: 0; width: 1280px; height: 800px; overflow: hidden; }
+			body {
+				font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+				background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 45%, #ecfeff 100%);
+				display: flex; align-items: center; justify-content: center; gap: 56px;
+				padding: 0 56px;
+			}
+			.brand { width: 470px; }
+			.brand-head { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+			.brand-head img { width: 76px; height: 76px; border-radius: 18px; box-shadow: 0 8px 20px rgba(37,99,235,.28); }
+			.brand h1 { font-size: 42px; margin: 0; color: #0f172a; letter-spacing: 1px; }
+			.tagline { font-size: 19px; color: #334155; margin: 0 0 24px; line-height: 1.6; }
+			ul { list-style: none; padding: 0; margin: 0; }
+			li { font-size: 17px; color: #1e293b; margin-bottom: 13px; padding-left: 30px; position: relative; line-height: 1.5; }
+			li::before {
+				content: ""; position: absolute; left: 0; top: 7px; width: 16px; height: 16px;
+				border-radius: 50%; background: #2563eb;
+				box-shadow: inset 0 0 0 4px #dbeafe;
+			}
+			.panel {
+				width: 520px; height: 600px; flex: none; border-radius: 14px; overflow: hidden;
+				box-shadow: 0 26px 60px rgba(15,23,42,.20), 0 2px 6px rgba(15,23,42,.10);
+				background: #fff; border: 1px solid #e2e8f0;
+			}
+			iframe { width: 520px; height: 600px; border: 0; display: block; }
+		</style>
+	</head>
+	<body>
+		<div class="brand">
+			<div class="brand-head">
+				<img src="../src/icons/icon-128.png" alt="" />
+				<h1>二游日历</h1>
+			</div>
+			<p class="tagline">28 款二次元手游的当期卡池与活动起止，一处看全。</p>
+			<ul>
+				<li>顶部近期卡片：最紧迫的那条一眼看到</li>
+				<li>每款游戏两行：卡池 / 活动，各带 14 天进度条</li>
+				<li>条目强调色可自选，来源可切换</li>
+			</ul>
+		</div>
+		<div class="panel"><iframe src="popup-panel.html"></iframe></div>
+	</body>
+</html>`;
+	fs.writeFileSync(path.join(LAB, "store-1280x800.html"), stage, "utf8");
+}
+
 fs.writeFileSync(
 	path.join(LAB, "popup-panel.html"),
 	inject(popupPanelHtml, chromeStub({

@@ -1,12 +1,14 @@
 This extension requires no sign-in and no account, so it can be fully tested right after installation.
 
 Testing steps:
-1. After installing, click the "二游日历" (Gacha Calendar) icon in the toolbar. The panel appears immediately and automatically starts one fetch round (about 5-15 seconds).
-2. Each game shows two lines: the current banner (with featured characters) and the current event, plus remaining-time countdowns.
-3. Hover over the banner/event text to see the full banner name, featured characters and original date text.
-4. Click the gear icon at the top right of the panel to open the settings page, where you can toggle each game on/off, reorder entries, delete and restore entries, and switch fetch sources. The "开始自检" (Run self-check) button at the bottom of the settings page runs every source once and reports the result.
+1. After installing, click the "二游日历" (Gacha Calendar) icon in the toolbar. A schedule panel opens directly (520x600) and automatically starts one fetch round (about 5-15 seconds).
+2. The top area is a "recent card": the most urgent item (icon / days left / date range / progress ring) with the next three items listed beside it. You can switch it to a "recent list" in the settings page.
+3. Below that is the schedule table: each game takes two lines - the current banner on the first, the current event on the second - each with its date range, remaining time and a 14-day progress bar.
+4. Hover over the banner/event text to see the full banner name, featured characters and original date text.
+5. To open the settings page: right-click the toolbar icon and choose "Extension options", or use "Extension options" for this extension on edge://extensions. There you can toggle each game, pick a custom accent color per entry, reorder entries, delete and restore entries, and switch fetch sources. The "开始自检" (Run self-check) button at the bottom runs every source once and reports the result.
+6. To go back to the older compact popup: Settings -> Experimental -> uncheck "新日程面板" (new schedule panel).
 
 Things worth knowing:
-- Some source sites rate-limit requests. If you refresh repeatedly in a short time, Bwiki returns HTTP 567; the panel then marks that source as failed and keeps showing the previous successful data for that column. This is not an extension defect and recovers by itself after a while.
+- Some source sites rate-limit requests. If you refresh repeatedly in a short time, Bwiki returns HTTP 567; the persistent footer then tells you which source failed and why, and that column keeps showing the previous successful data. This is not an extension defect and recovers by itself after a while.
 - For a few games, when no new banner/event has been published yet in the current period, the panel shows "未公布" (not announced) or "无匹配" (no match). This is expected.
 - The extension collects no data, uploads nothing, and contains no content script, so it never modifies any web page.

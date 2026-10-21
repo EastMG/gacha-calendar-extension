@@ -1,8 +1,20 @@
+[Host permissions (host_permissions), 49 entries]
+
 The extension's function is to fetch publicly available banner/event information from each game's official announcement pages and community wikis, so it needs access to those source sites. Browsers require an extension to statically declare its target domains before making cross-origin requests, which is why these domains are listed individually in the manifest.
 
 Key points:
-1) It does NOT request <all_urls>, and holds no wildcard/all-web access. Only the specific domains that are actually fetched are declared.
-2) These domains belong to the official announcement pages and community wikis (Bwiki, PRTS, FZ Wiki, GameKee, GameTora, and others) of games such as Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Arknights, Blue Archive, Uma Musume Pretty Derby, and Fate/Grand Order.
-3) Among them, `sekai-world.github.io` / `raw.githubusercontent.com` are the static data sources of the Project SEKAI community wiki (hosted on GitHub Pages), and `gh-proxy.com` is the read-only mirror proxy provided by that community. GitHub Pages does not return CORS headers, so the extension must read the same public dataset through that mirror; both serve the same open-source dataset.
-4) Requests are used solely to read public page content; no user data is sent to these sites.
-5) The extension contains no content script, so it does not read or modify any web page the user is browsing.
+1) It does NOT request <all_urls> and holds no "all sites" access. 47 of the 49 entries are specific domains; the remaining 2 both belong to GameKee: https://gamekee.com/* and https://*.gamekee.com/*.
+2) Why one subdomain wildcard: GameKee's (Blue Archive) content CDN address is not hard-coded in the page - it is returned by the API in a content_cdn field (observed to point at api-cdn.gamekee.com). That subdomain cannot be listed in advance as a concrete host, so it is authorized at the domain level. Apart from this entry there is no wildcard permission at all.
+3) These domains belong to the official announcement pages and community wikis (Bwiki, PRTS, FZ Wiki, GameKee, GameTora, and others) of games such as Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Arknights, Blue Archive, Uma Musume Pretty Derby, and Fate/Grand Order, plus a few static-asset hosts used to load game icons.
+4) Among them, sekai-world.github.io / raw.githubusercontent.com are the static data sources of the Project SEKAI community wiki (hosted on GitHub Pages), and gh-proxy.com is the read-only mirror proxy provided by that community. GitHub Pages does not return CORS headers, so the extension must read the same public dataset through that mirror; both serve the same open-source dataset.
+5) Requests are used solely to read public page content; no user data is sent to these sites.
+6) The extension contains no content script, so it does not read or modify any web page the user is browsing.
+
+[declarativeNetRequestWithHostAccess]
+
+Used only to add a Referer request header for one source. GameKee's content data lives on the CDN subdomain above, and that CDN checks the Referer header, while browser fetch does not allow an extension to set Referer itself. A declarativeNetRequest modifyHeaders rule therefore sets Referer: https://www.gamekee.com/ before the request is sent.
+
+Key points:
+1) The rule matches only api-cdn.gamekee.com (an already-authorized host). It does not block or modify requests to any other site.
+2) It only adjusts a request header: no data is read or uploaded, and response bodies are not involved.
+3) declarativeNetRequest (the variant that can block requests across all sites) is NOT requested - only the withHostAccess variant.

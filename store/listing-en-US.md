@@ -5,18 +5,22 @@
 
 ## Description（必填，250 ~ 10000 字符）
 
-当前字数：1728 字符。
+当前字数：2182 字符。
 
 ```
 "Gacha Calendar" collects the currently running banners and events of 28 anime-style mobile games into one place.
 
-Click the toolbar icon and each game shows two lines: the current banner (with the featured characters) and the current event, each with a live countdown such as "9d 3h 54m remaining". Hover over a line to see the full banner name, the complete featured-character list, and the original date text.
+Click the toolbar icon to open a schedule panel (520x600):
+- The top area is a "recent card" showing the most urgent item (icon, days left, date range, progress ring) with the next three items listed beside it. You can switch it to a "recent list" in settings.
+- Below that is the schedule table: each game takes two lines - the current banner (with featured characters) on the first, the current event on the second - each with its date range, a live countdown such as "9d 3h 54m remaining", and a 14-day progress bar.
+- Hover over a line to see the full banner name, the complete featured-character list, and the original date text.
 
 Supported games (28): Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Honkai Impact 3rd, Wuthering Waves, Arknights, Arknights: Endfield, Blue Archive (CN / Global / JP), BanG Dream! Girls Band Party, BanG Dream! OurNotes (JP / Global), Wuhua Mixin, Punishing: Gray Raven, Chaos Zero Nightmare, Cedar, Dudufaces, Uma Musume Pretty Derby (JP / Global), Persona5: The Phantom X, Neverness to Everness, Girls' Frontline 2: Exilium, Fate/Grand Order, Project SEKAI (CN), Stellar Sora, Reverse: 1999.
 
 Features:
 - See every current banner and event at a glance, with remaining-time countdowns
 - Hover for full banner names, featured characters and exact dates
+- Settings page: pick a custom accent color per entry (used by the progress bars and the card), with one-click reset
 - Settings page: toggle which entries appear, reorder them, delete and restore entries
 - Choose the banner source and event source independently (several games offer multiple community sources)
 - Configurable refresh interval (daily by default) to avoid hammering the source sites
