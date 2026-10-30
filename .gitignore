@@ -25,3 +25,9 @@ _*.mjs
 
 # 面板截图夹具（tools/make-store-assets.mjs 生成）
 _lab/
+
+# 临时调试产物（截图 / 一次性脚本 / 日志）：别提交，避免再次误入库
+_*.png
+_*.mjs
+_*.log
+_msg.txt
