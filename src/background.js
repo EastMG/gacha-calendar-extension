@@ -13,6 +13,10 @@
 // 否则任何网页都能通过消息桥驱使扩展去请求任意地址。
 
 /** 允许代发的主机白名单（与 manifest.host_permissions 同源，精确或子域匹配）。 */
+// 构建标记：build.mjs 写出 dist 时把占位符替换成真实值（版本号要维护者下令才改，
+// 开发期靠它分辨"浏览器里跑的 SW 到底是哪次构建"）。
+const BUILD_ID = "__BUILD_ID__";
+
 import {
 	NOTIFY_NAME_DEFAULT,
 	REMIND_DEFAULT_END_NODES,
@@ -162,6 +166,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 		sendResponse({ ok: false, error: "untrusted-sender", hint: senderHint(sender) });
 		return false;
 	}
+	// 诊断：回报"后台 SW 是哪次构建 / 它看到的版本 / 发送者形状"，用于排查
+	// 「设置页与后台代码不是同一份构建」这类问题（不受信任校验限制，只回无敏感信息的字段）
+	if (msg && msg.type === "diag") {
+		sendResponse({
+			ok: true,
+			buildId: BUILD_ID,
+			version: chrome.runtime.getManifest().version,
+			sender: senderHint(sender)
+		});
+		return false;
+	}
+
 	// 「发送测试通知」：设置页按钮 → 这里生成 DSH 同款文案并弹一条，用完即弃（不读写去重状态）
 	if (msg && msg.type === "testNotify") {
 		(async () => {

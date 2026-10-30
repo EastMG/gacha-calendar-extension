@@ -154,6 +154,21 @@ function copyIcons() {
 }
 
 // —— 组装产物清单（内容 → 目标路径）——
+/** 构建标记：`<git短sha>+<本地时间>`。版本号要等指令才改，开发期靠它分辨构建新旧。 */
+function computeBuildId() {
+	let sha = "nogit";
+	try {
+		sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
+	} catch {
+		/* 没有 git 也能构建 */
+	}
+	const d = new Date();
+	const pad = (n) => String(n).padStart(2, "0");
+	const stamp = d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "-" + pad(d.getHours()) + pad(d.getMinutes());
+	return sha + "+" + stamp;
+}
+let BUILD_ID = "dev";
+
 function buildArtifacts() {
 	const out = new Map();
 	// manifest：写出前统一版本号，键顺序固定（Chrome 对 manifest_version 开头更友好）
@@ -181,7 +196,10 @@ function buildArtifacts() {
 	// background.js：正常构建原样复制（保持可读、便于审查）；
 	// --verify 时把自检入口一起打进去（由 esbuild 内联 core），用于自动化验证。
 	if (!VERIFY) {
-		out.set("background.js", fs.readFileSync(path.join(SRC, "background.js"), "utf8"));
+		out.set(
+			"background.js",
+			fs.readFileSync(path.join(SRC, "background.js"), "utf8").replaceAll("__BUILD_ID__", BUILD_ID)
+		);
 	}
 	// core 版本（设置页显示用）
 	out.set("core-version.js", `export const CORE_VERSION = ${JSON.stringify(corePkg.version)};\n`);
@@ -193,6 +211,7 @@ function buildArtifacts() {
 }
 
 function main() {
+	BUILD_ID = computeBuildId();
 	// ⚠️ 清空 dist：否则**上一次构建的残留文件**会留在产物里（v0.2.23 踩到：删了
 //    src/panel.html 之后 dist/panel.html 还在，虽然不在打包清单，但容易误判）。
 fs.rmSync(DIST, { recursive: true, force: true });
@@ -259,23 +278,10 @@ ensureDir(DIST);
 	// 这里不再产出额外的验证页面 —— 经实测，本机 Chrome 下 chrome-extension:// 页面难以可靠加载，
 	// 而 service worker 一定会执行，是更可信的验证落点。
 
-	// 构建标记：设置页「关于」显示它，用来区分"加载的是不是最新一次构建"
-	// （版本号要维护者下令才改，所以开发期靠这个标记辨认构建新旧）
-	const buildId = (() => {
-		let sha = "nogit";
-		try {
-			sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
-		} catch {
-			/* 没有 git 也能构建 */
-		}
-		const d = new Date();
-		const pad = (n) => String(n).padStart(2, "0");
-		const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
-		return `${sha}+${stamp}`;
-	})();
+	// 构建标记落盘（设置页「关于」显示；background 里也注入了同一个值）
 	fs.writeFileSync(
 		path.join(DIST, "build-info.js"),
-		`// 由 build.mjs 生成（不要手改）\nexport const BUILD_ID = ${JSON.stringify(buildId)};\nexport const BUILT_AT = ${JSON.stringify(new Date().toISOString())};\n`,
+		`// 由 build.mjs 生成（不要手改）\nexport const BUILD_ID = ${JSON.stringify(BUILD_ID)};\nexport const BUILT_AT = ${JSON.stringify(new Date().toISOString())};\n`,
 		"utf8"
 	);
 

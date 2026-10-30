@@ -55,7 +55,8 @@ const el = {
 	scList: document.getElementById("sc-list"),
 	ver: document.getElementById("ver"),
 	coreVer: document.getElementById("core-ver"),
-	buildId: document.getElementById("build-id")
+	buildId: document.getElementById("build-id"),
+	bgInfo: document.getElementById("bg-info")
 };
 
 /** 当前设置快照（内存态；每次改动后落盘并重渲染）。
@@ -578,7 +579,9 @@ async function sendTestNotify() {
 		if (res && res.ok) {
 			if (el.testNotifyHint) el.testNotifyHint.textContent = "已发送：" + res.title;
 		} else {
-			if (el.testNotifyHint) el.testNotifyHint.textContent = "发送失败：" + ((res && res.error) || "未知原因");
+			const errText = (res && res.error) || "未知原因";
+			const senderText = res && res.hint ? "（" + res.hint + "）" : "";
+			if (el.testNotifyHint) el.testNotifyHint.textContent = "发送失败：" + errText + senderText;
 		}
 	} catch (err) {
 		if (el.testNotifyHint) el.testNotifyHint.textContent = "发送失败：" + String((err && err.message) || err);
@@ -679,6 +682,13 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		if (el.buildId) el.buildId.textContent = bi.BUILD_ID;
 	} catch {
 		if (el.buildId) el.buildId.textContent = "—";
+	}
+	// 后台 SW 的构建标记：与页面构建不一致 ⇒ 浏览器跑的是旧 service worker（需要重载扩展）
+	try {
+		const diag = await chrome.runtime.sendMessage({ type: "diag" });
+		if (el.bgInfo) el.bgInfo.textContent = (diag && diag.buildId) || "—";
+	} catch {
+		if (el.bgInfo) el.bgInfo.textContent = "无响应";
 	}
 
 	// 主机白名单：供自定义地址输入框提示可选范围（与 manifest 同源）
