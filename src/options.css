@@ -357,3 +357,13 @@ input[type="color"].color-swatch::-webkit-color-swatch {
 	outline: 2px solid var(--accent, #3b6fd4);
 	outline-offset: 1px;
 }
+
+/* 文案里引用按钮字形时用（↺ / ↑↓ 等），避免和正文混在一起看不清 */
+.kbd {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 11px;
+	padding: 0 3px;
+	border: 1px solid var(--line, #d8d8d8);
+	border-radius: 4px;
+	opacity: 0.85;
+}

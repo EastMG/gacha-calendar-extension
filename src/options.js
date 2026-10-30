@@ -381,7 +381,7 @@ function makeCustomUrlLabel(game, key, labelText, value) {
 	const input = document.createElement("input");
 	input.type = "text";
 	input.value = value;
-	input.placeholder = "https://…（须在扩展已声明的主机范围内）";
+	input.placeholder = "https://…（须在权限清单内）";
 	input.setAttribute("list", "allowed-hosts");
 	input.spellcheck = false;
 	// 输入即写内存态，失焦或回车才落盘（避免每敲一个字都写一次 storage）
@@ -517,7 +517,7 @@ async function move(ids, id, delta) {
 
 async function runSelfCheck() {
 	el.selfCheck.disabled = true;
-	el.selfCheck.textContent = "自检中…";
+	el.selfCheck.textContent = "检查中…";
 	el.scSummary.textContent = "";
 	el.scList.replaceChildren();
 	const started = Date.now();
@@ -525,7 +525,7 @@ async function runSelfCheck() {
 		const report = await engine.selfCheck();
 		const secs = ((Date.now() - started) / 1000).toFixed(1);
 		const s = report.summary || {};
-		el.scSummary.textContent = `共 ${report.total} 个条目 · 来源结论：正常 ${s.ok || 0} / 未公布 ${s.nomatch || 0} / 报错 ${s.down || 0} · 用时 ${secs}s`;
+		el.scSummary.textContent = `共 ${report.total} 个条目 · 正常 ${s.ok || 0} / 未公布 ${s.nomatch || 0} / 报错 ${s.down || 0} · 用时 ${secs}s`;
 		const items = [];
 		if (!report.problems || report.problems.length === 0) {
 			items.push({ text: "✓ 所有来源都能解析出当期内容", cls: "ok" });
@@ -541,10 +541,10 @@ async function runSelfCheck() {
 			})
 		);
 	} catch (err) {
-		el.scSummary.textContent = "自检失败：" + String((err && err.message) || err);
+		el.scSummary.textContent = "检查失败：" + String((err && err.message) || err);
 	} finally {
 		el.selfCheck.disabled = false;
-		el.selfCheck.textContent = "重新自检";
+		el.selfCheck.textContent = "重新检查";
 	}
 }
 
@@ -636,7 +636,7 @@ async function exportCalendar() {
 	}
 	const label = "导出 .ics";
 	if (!events.length) {
-		el.exportIcs.textContent = "没有可导出的条目";
+		el.exportIcs.textContent = "当前没有在期条目";
 		setTimeout(() => { el.exportIcs.textContent = label; }, 2500);
 		return;
 	}

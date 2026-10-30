@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 	<head>
 		<meta charset="utf-8" />
@@ -10,9 +10,9 @@
 			<header class="hd">
 				<h1>二游日历 · 设置</h1>
 				<p class="sub">
-					共 <span id="count">–</span> 个条目。抓取由
+					共 <span id="count">–</span> 个条目 · 抓取由
 					<a id="core-link" href="https://www.npmjs.com/package/gacha-calendar-core" target="_blank" rel="noreferrer">gacha-calendar-core</a>
-					完成，本页只保存偏好设置。
+					完成，本页只存偏好。
 				</p>
 			</header>
 
@@ -21,12 +21,12 @@
 				<div class="row">
 					<label class="lbl" for="autoRefresh">自动刷新</label>
 					<input id="autoRefresh" type="checkbox" />
-					<span class="hint">关闭后仅在手动点击刷新时联网。</span>
+					<span class="hint">关掉后只在手动刷新时联网</span>
 				</div>
 				<div class="row">
 					<label class="lbl" for="refreshMinutes">刷新频率</label>
 					<select id="refreshMinutes"></select>
-					<span class="hint">打开扩展时若已超过该间隔，将自动抓取一轮。</span>
+					<span class="hint">超过这个间隔后，打开面板自动抓一轮</span>
 				</div>
 			</section>
 
@@ -35,36 +35,27 @@
 				<div class="row">
 					<label class="lbl" for="badge">到期角标</label>
 					<input id="badge" type="checkbox" />
-					<span class="hint">
-						在工具栏图标上显示 <strong>3 天内到期</strong>的条目数。
-						只在浏览器运行期间更新（扩展没有常驻进程，浏览器关闭后不会提醒）。
-					</span>
+					<span class="hint">工具栏显示 3 天内到期数（浏览器运行时更新）</span>
 				</div>
 				<div class="row">
 					<label class="lbl" for="remindOn">到期提醒</label>
 					<input id="remindOn" type="checkbox" />
-					<span class="hint">
-						条目到期前推送系统通知（默认开）。同一件事只发<strong>最紧急的那一档</strong>；
-						浏览器没运行时不会提醒，若开了 Edge 的「随系统启动 + 关闭后继续运行后台扩展」则可覆盖到开机后。
-					</span>
+					<span class="hint">到期前推送系统通知，同一件事只发最紧急的一档</span>
 				</div>
 				<div class="row">
 					<label class="lbl">提醒档位</label>
 					<div class="chips" id="remindChips" role="group" aria-label="提醒档位（到期前多少小时）"></div>
-					<span class="hint">可多选；<strong>全部取消 = 不提醒</strong>。</span>
+					<span class="hint">结束前多久提醒（可多选；全不选 = 不提醒）</span>
 				</div>
 				<div class="row">
 					<label class="lbl">测试通知</label>
 					<button id="testNotify" class="btn" type="button">发送测试通知</button>
-					<span class="hint" id="testNotifyHint">用真实提醒同一套文案弹一条，验证通知链路是否打通。</span>
+					<span class="hint" id="testNotifyHint">立刻弹一条，确认通知链路通不通</span>
 				</div>
 				<div class="row">
 					<label class="lbl">导出日历</label>
 					<button id="exportIcs" class="btn" type="button">导出 .ics</button>
-					<span class="hint">
-						把当前在期（及尚未结束）的卡池与活动导出成日历文件，可导入手机 / 电脑日历。
-						时间为本机时区。
-					</span>
+					<span class="hint">导出当前在期的卡池与活动（.ics，可导入手机 / 电脑日历）</span>
 				</div>
 			</section>
 
@@ -73,7 +64,7 @@
 				<div class="row">
 					<label class="lbl" for="newPanel">新日程面板</label>
 					<input id="newPanel" type="checkbox" />
-					<span class="hint">实验性新版UI，开发中</span>
+					<span class="hint">实验性新版 UI，开发中</span>
 				</div>
 				<div class="row" id="panelTopRow">
 					<label class="lbl" for="panelTop">顶部区域</label>
@@ -82,7 +73,7 @@
 						<option value="slot">近期卡片</option>
 					</select>
 					<span class="hint">
-						新日程面板顶部区域展示样式
+						面板顶部的呈现方式
 						<em>需开启「新日程面板」</em>
 					</span>
 				</div>
@@ -91,14 +82,10 @@
 			<section class="card">
 				<h2>条目</h2>
 				<p class="hint block">
-					「展示」控制条目是否出现在面板中；「颜色」自定义该条目在面板里的强调色（点色块选色，
-					右侧「↺」恢复默认）；「↑↓」调整顺序；卡池来源与活动来源可分别选择。
-					选择「自定义…」后可在本行直接填写来源地址。
+					「展示」控制显隐；「颜色」点色块选色，<span class="kbd">↺</span> 恢复默认；<span class="kbd">↑↓</span> 排序；
+					来源可选「自定义…」直接填地址。
 				</p>
-				<p class="hint block">
-					受浏览器扩展权限限制，本扩展只能访问其声明的主机列表；自定义来源地址须属于该列表，
-					否则不会被抓取，且无错误提示。
-				</p>
+				<p class="hint block">自定义地址须在扩展权限清单内，否则不抓取（无提示）。</p>
 				<div class="grid-head">
 					<span>游戏</span><span>展示</span><span>颜色</span><span>卡池来源</span><span>活动来源</span><span>操作</span>
 				</div>
@@ -111,18 +98,15 @@
 
 			<section class="card" id="removed-card" hidden>
 				<h2>已删除的条目</h2>
-				<p class="hint block">删除的内置条目记录于此，可单独或一次性恢复。</p>
+				<p class="hint block">删除的内置条目可在这里单独或一键恢复。</p>
 				<div id="removed-list"></div>
 			</section>
 
 			<section class="card">
 				<h2>解析器自检</h2>
-				<p class="hint block">
-					对每个来源各运行一次，报告解析结果与抓取失败原因，用于源站改版时定位问题。
-					该操作只读：不改动缓存与设置。
-				</p>
+				<p class="hint block">逐个来源跑一遍，报告解析结果与失败原因（只读，不改缓存与设置）。</p>
 				<div class="row">
-					<button id="selfCheck" class="btn primary" type="button">开始自检</button>
+					<button id="selfCheck" class="btn primary" type="button">立即检查</button>
 					<span id="sc-summary" class="hint"></span>
 				</div>
 				<ul id="sc-list" class="sc-list"></ul>
@@ -131,9 +115,11 @@
 			<section class="card">
 				<h2>关于</h2>
 				<p class="hint block">
-					数据来源：各游戏官方公告与社区 Wiki（Bwiki / PRTS / FZ Wiki / GameKee 等）。
-					抓取失败时该列沿用上次成功的数据，并在面板上标注。<br />
-					本扩展不收集任何个人数据；所有请求由浏览器直接发往上述来源站。
+					数据来源：各游戏官方公告与社区 Wiki（Bwiki / PRTS / FZ Wiki / GameKee 等）。<br />
+					抓取失败时沿用上次成功数据并标注；不收集任何数据，请求直达来源站。
+				</p>
+				<p class="hint block">
+					<a href="https://github.com/EastMG/gacha-calendar-extension" target="_blank" rel="noreferrer">⭐ 觉得好用？去 GitHub 点个 Star</a>
 				</p>
 				<div class="row">
 					<span class="hint">
