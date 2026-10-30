@@ -50,7 +50,9 @@ src/entry-meta.js      来源显示名口径（与 core 的 getDefaultSourceName
 src/ics.js             日历导出（RFC 5545 纯函数：转义 / 75-octet 折行 / UID / 生成）
 （设置键）refreshMode  "startup"（默认，浏览器启动后首次打开抓一轮）/ "interval"（按 refreshMinutes 间隔）
 src/proxy.js           跨域代发白名单 + proxyFetch（SW 与后台抓取共用）
-src/refresh-worker.js  后台抓取 worker（内联 core；启动即抓 / 间隔抓 / 提醒前补抓）
+src/refresh-worker.js  后台抓取 worker（内联 core；只负责 runRefreshTick 的判定与抓取）
+  · 调度只有一处：background 的 `gacha-tick` 闹钟（30 分钟）→ runRefreshTick → 角标 → 提醒；
+    启动/安装/设置变更也走同一条 tickAndUpdate，panel/popup 不再自己判间隔（只兜底无缓存）。
   · refresh-worker 的边界：SW 会在空闲时被回收；抓取期间有网络活动不会被回收。
     万一被回收，core 在**最后一刻**才写 lastData/lastRefresh，下一轮闹钟会补抓，不会写半份数据。
   · refresh-worker 由 background.js `import`，所以它必须打成 **ESM**（bundleEsm），

@@ -13,7 +13,6 @@ import { buildRowModel, defaultRecord, buildScrapeInfo } from "./view-helpers.js
 const engine = createEngine({ transport, storage: createStorage() });
 
 /** 默认配置（与 core 的 DEFAULT_SETTINGS 对齐；这里只需 UI 用到的那几项）。 */
-const DEFAULT_REFRESH_MINUTES = 24 * 60;
 
 const el = {
 	list: document.getElementById("list"),
@@ -59,7 +58,7 @@ async function loadState() {
 		engine.listGames(),
 		engine.getCached(),
 		// shown 是 core 0.11.x 新增的键：默认隐藏的条目被用户打开后记在这里
-		readKeys(["order", "hidden", "shown", "lastSource", "refreshMinutes", "refreshMode", "autoRefresh"])
+		readKeys(["order", "hidden", "shown", "lastSource", "autoRefresh"])
 	]);
 	const order = Array.isArray(cfg.order) ? cfg.order : [];
 	// 可见性不能只看 hidden：core 有 5 个条目出厂默认隐藏（判定见 src/visibility.js）
@@ -68,8 +67,6 @@ async function loadState() {
 	state.records = cached.games || {};
 	state.refreshedAt = cached.refreshedAt || 0;
 	state.lastSource = cfg.lastSource || "none";
-	state.refreshMinutes = Number(cfg.refreshMinutes) || DEFAULT_REFRESH_MINUTES;
-	state.refreshMode = cfg.refreshMode === "interval" ? "interval" : "startup";
 	state.autoRefresh = cfg.autoRefresh !== false;
 }
 
@@ -201,17 +198,10 @@ async function doRefresh() {
 
 /** 打开 popup 时按设置的频率判断是否需要自动抓一轮（避免每次点开都联网）。 */
 async function autoRefreshIfDue() {
+	// 自动刷新统一由后台 gacha-tick 负责（启动时 / 间隔都在 SW 里做），
+	// 页面这里**不再按间隔判**，避免与后台同时抓一轮；只兜底"完全没有缓存"的情况。
 	if (!state.autoRefresh) return;
-	// 「浏览器启动时」由后台 refresh-worker 真抓（不依赖面板打开）；这里只兜底"完全没有缓存"
-	if (state.refreshMode === "startup") {
-		if (!state.refreshedAt) await doRefresh();
-		return;
-	}
-	const intervalMs = Math.max(1, state.refreshMinutes) * 60 * 1000;
-	const due = !state.refreshedAt || Date.now() - state.refreshedAt >= intervalMs;
-	// 完全没有缓存时也抓一次（首次使用）
-	const empty = Object.keys(state.records).length === 0;
-	if (due || empty) await doRefresh();
+	if (!state.refreshedAt || Object.keys(state.records).length === 0) await doRefresh();
 }
 
 // —— 入口 ——

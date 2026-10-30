@@ -18,7 +18,7 @@
 const BUILD_ID = "__BUILD_ID__";
 
 import { proxyFetch } from "./proxy.js";
-import { maybeRefreshIfStale, setRefreshListener } from "./refresh-worker.js";
+import { runRefreshTick } from "./refresh-worker.js";
 
 import {
 	NOTIFY_NAME_DEFAULT,
@@ -154,7 +154,6 @@ syncActionPopup();
 // 数据口径：lastData 是 JSON 字符串，形如 `{ [游戏id]: { bannerDates, eventDates, … } }`，
 // 其中 bannerDates/eventDates 是**本机时区换算后的**「MM-DD HH:MM ~ MM-DD HH:MM」外显文本，
 // 所以这里按本机时区解析，和面板显示一致。
-const BADGE_ALARM = "gacha-calendar-badge";
 const BADGE_DAYS = 3;
 
 /** 解析「MM-DD HH:MM ~ MM-DD HH:MM」→ { startTs, endTs }；失败返回 null。 */
@@ -260,33 +259,47 @@ async function checkReminders() {
 	}
 }
 
-// 后台刷新（含启动即抓）完成后，立刻用**新数据**重算角标与提醒
-setRefreshListener(() => {
-	updateBadge();
-	checkReminders();
-});
+// —— 单一调度管道 ——
+//
+// 全扩展只有**一个**周期闹钟（gacha-tick，30 分钟），它按顺序做三件事：
+//   ① runRefreshTick()：按当前设置判断要不要抓（启动时 / 间隔）—— 决策只在 refresh-worker 里
+//   ② updateBadge()   ：用（可能刚更新的）数据重算角标
+//   ③ checkReminders()：用同一份数据判到期通知
+//
+// 这样就没有"两套闹钟各判一次、面板再判一次"的重复抓取；也保证角标/通知永远基于**抓完之后**的数据。
+const TICK_ALARM = "gacha-tick";
+const TICK_MINUTES = 30;
+
+async function tickAndUpdate() {
+	try {
+		await runRefreshTick(); // 内部幂等：同一时刻只允许一轮
+	} catch {
+		/* 抓取失败也要更新角标/提醒（用旧数据），不能让 UI 停在上一轮 */
+	}
+	await updateBadge();
+	await checkReminders();
+}
 
 chrome.notifications.onClicked.addListener((nid) => {
 	chrome.notifications.clear(nid);
 });
 
-chrome.alarms.create(BADGE_ALARM, { periodInMinutes: 30 });
+chrome.alarms.create(TICK_ALARM, { periodInMinutes: TICK_MINUTES });
 chrome.alarms.onAlarm.addListener((alarm) => {
-	if (alarm && alarm.name === BADGE_ALARM) {
-		// 启动时模式下数据超过 24h 就先补抓一轮（抓完的回调会重算角标与提醒）
-		maybeRefreshIfStale();
-		updateBadge();
-		checkReminders();
-	}
+	if (alarm && alarm.name === TICK_ALARM) tickAndUpdate();
 });
 chrome.runtime.onInstalled.addListener(() => {
-	updateBadge();
-	checkReminders();
+	tickAndUpdate();
 });
 chrome.runtime.onStartup.addListener(() => {
-	updateBadge();
-	checkReminders();
+	tickAndUpdate();
 });
-// SW 每次被唤醒（例如用户点图标）也顺手算一次，避免等满 30 分钟
-updateBadge();
-checkReminders();
+// 设置改动立刻生效：切到「间隔」且已过间隔、或刚从关闭打开自动刷新时，不必等下一次闹钟
+chrome.storage.onChanged.addListener((changes, area) => {
+	if (area !== "local") return;
+	if (changes.autoRefresh || changes.refreshMode || changes.refreshMinutes) tickAndUpdate();
+	if (changes.lastData || changes.badge) updateBadge();
+	if (changes.lastData || changes.remindOn) checkReminders();
+});
+// SW 每次被唤醒（例如用户点图标）也顺手跑一次管道，避免等满 30 分钟
+tickAndUpdate();

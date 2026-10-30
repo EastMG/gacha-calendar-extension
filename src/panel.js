@@ -22,14 +22,12 @@ const engine = createEngine({ transport, storage: createStorage() });
 // 面板只有一种宿主：工具栏 popup（520×600，内容在内部滚动、底栏常驻）。
 // 「近期」默认最多显示 2 条（展开后仍可看全部）—— 给下面的游戏表留高度。
 const NEAR_LIMIT = 2;
-const DEFAULT_REFRESH_MINUTES = 24 * 60;
 
 const state = {
 	/** 已按 order 排序、过滤掉隐藏项，并合并了抓取结果的条目（形状与插件一致）。 */
 	games: [],
 	refreshedAt: 0,
 	lastSource: "none",
-	refreshMinutes: DEFAULT_REFRESH_MINUTES,
 	refreshMode: "startup",
 	autoRefresh: true,
 	gameColors: "{}",
@@ -103,7 +101,7 @@ async function loadState() {
 		engine.getCached(),
 		readKeys([
 			"order", "hidden", "shown", "removed", "customEntries", "customUrls", "customEventUrls",
-			"gameColors", "panelTop", "refreshMinutes", "refreshMode", "autoRefresh", "lastSource"
+			"gameColors", "panelTop", "autoRefresh", "lastSource"
 		])
 	]);
 	const order = Array.isArray(cfg.order) ? cfg.order : [];
@@ -114,8 +112,6 @@ async function loadState() {
 	state.games = mergeGames(list, records, order, vis, colorOverrides);
 	state.refreshedAt = cached.refreshedAt || 0;
 	state.lastSource = cfg.lastSource || "none";
-	state.refreshMinutes = Number(cfg.refreshMinutes) || DEFAULT_REFRESH_MINUTES;
-	state.refreshMode = cfg.refreshMode === "interval" ? "interval" : "startup";
 	state.autoRefresh = cfg.autoRefresh !== false;
 	// 设置页写入的是 JSON 字符串；若读到非字符串（历史数据/异常），按已解析的对象回写一份，别丢掉覆盖色
 	state.gameColors = typeof cfg.gameColors === "string" ? cfg.gameColors : JSON.stringify(colorOverrides);
@@ -181,16 +177,11 @@ async function doRefresh() {
 
 /** 打开页面时按设置的频率判断是否需要自动抓一轮（与 popup 同口径，避免每次打开都联网）。 */
 async function autoRefreshIfDue() {
+	// 自动刷新统一由后台 gacha-tick 负责（启动时 / 间隔都在 SW 里做），
+	// 页面这里**不再按间隔判**，避免与后台同时抓一轮；只兜底"完全没有缓存"的情况。
 	if (!state.autoRefresh) return;
-	// 「浏览器启动时」由后台 refresh-worker 真抓（不依赖面板打开）；这里只兜底"完全没有缓存"
-	if (state.refreshMode === "startup") {
-		if (!state.refreshedAt) await doRefresh();
-		return;
+	if (!state.refreshedAt) await doRefresh();
 	}
-	const intervalMs = Math.max(1, state.refreshMinutes) * 60 * 1000;
-	const due = !state.refreshedAt || Date.now() - state.refreshedAt >= intervalMs;
-	if (due) await doRefresh();
-}
 
 // —— 入口 ——
 
