@@ -285,6 +285,7 @@ Partner Center → **Analytics** 页有三个标签：`Weekly users` / `Installs
 | **0.2.33（到期通知）** | 已发 GitHub；`notifications` 权限（默认开，可关）⇒ 与 0.2.32 合并后一次提交，需补 alarms + notifications 两条权限理由 |
 | **未发版（提醒按 DSH 口径重做）** | 档位胶囊 72/24/6/2 + 折叠去重 + 同款文案 + 发送测试通知；修 `trustedSender` 误拒设置页消息；**等指令再定版本号/提交** |
 | **未发版（后台抓取）** | refresh-worker 内联 core 进 SW：启动即抓 / 间隔抓 / 提醒前补抓；**包体 +约 400KB**（zip 约 900KB），提交商店前留意审核说明 |
+| **未发版（代码分割）** | 四个入口共用一份 core chunk：dist 2.1MB → **~780KB**，zip 442KB → **237KB**；verify 增加「core 只内联一份 / import 完整 / 体积上界」检查 |
 | 商店文案补更新 | ✅ 上一次已过审生效（zh 643 / en 1728 字符）\n| **文案改版（待提交）** | 本地已改：zh **880** 字符、en **2182** 字符（新增新面板/颜色/失败提示说明） |
 
 > 0.2.6 涉及**新增 3 个主机权限**（`gametora.com`、`gh-proxy.com`、

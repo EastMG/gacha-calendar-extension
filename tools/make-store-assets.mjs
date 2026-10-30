@@ -108,8 +108,10 @@ const seed = {
 // ---------- 2. 生成夹具 ----------
 fs.rmSync(LAB, { recursive: true, force: true });
 fs.mkdirSync(LAB, { recursive: true });
-for (const f of ["popup.js", "popup.css", "options.js", "options.css", "core-version.js", "panel.js", "popup-panel.html", "schedule.css"]) {
-	fs.copyFileSync(path.join(DIST, f), path.join(LAB, f));
+// 复制**全部** JS：代码分割后入口会 import chunk-*.js，只拷入口会 404
+const STATIC_LAB = ["popup.css", "options.css", "popup-panel.html", "schedule.css"];
+for (const f of fs.readdirSync(DIST)) {
+	if (f.endsWith(".js") || STATIC_LAB.includes(f)) fs.copyFileSync(path.join(DIST, f), path.join(LAB, f));
 }
 
 // 为什么也要复制 core-version.js：设置页是**运行时动态 import** 它（故意不内联进 bundle，

@@ -11,6 +11,11 @@
 //   dist/icons/icon-{16,32,48,128}.png
 //   dist/core-version.js                ← 构建时生成，供设置页显示 core 版本
 //
+// ⚠️ 四个入口（popup / options / panel / refresh-worker）共用**同一份 core**：
+//    用 esbuild 的代码分割（--splitting）产出 dist/chunk-<hash>.js，入口只留自己的代码。
+//    以前每个入口各自 --bundle，core 被复制 4 份（约 +1.2 MB）。chunk 文件名带内容哈希，
+//    入口用相对路径 import 它；页面/Service Worker 都按 ESM 加载。
+//
 // 用法：
 //   node build.mjs           构建到 dist/
 //   node build.mjs --zip     构建并打包 dist/ → release/gacha-calendar-extension-<version>.zip
@@ -125,52 +130,40 @@ function esbuildBin() {
 	fail("未找到 esbuild 可执行文件，请先安装依赖（见 README_Dev.md「构建」一节）");
 }
 
-/** 用 esbuild 把 ESM 依赖树打成单文件 IIFE（core 因此被内联）。 */
-function bundle(entry, outfile) {
-	execFileSync(
-		esbuildBin(),
-		[
-			path.join(SRC, entry),
-			"--bundle",
-			"--format=iife",
-			"--target=chrome102",
-			"--platform=browser",
-			"--legal-comments=none",
-			// React 的入口靠这个环境变量在 开发版/生产版 之间二选一；
-			// 不定义的话 esbuild 会保留两条分支、运行时落到**开发版**（体积大 5 倍且带调试告警）。
-			'--define:process.env.NODE_ENV="production"',
-			"--log-level=warning",
-			`--outfile=${outfile}`
-		],
-		{ cwd: ROOT, stdio: "inherit" }
-	);
-}
-
 /**
- * 与 bundle() 相同，但产出 **ESM**（有 export）。
+ * 一次 esbuild 构建产出**全部** JS：四个入口 + 共享 chunk（core 只出现一份）。
  *
- * 为什么需要第二个：bundle() 用 `--format=iife`，产物是"自执行脚本、没有 export"。
- * popup/options/panel 都是页面里 `<script type="module">` 直接加载的，IIFE 没问题；
- * 但 refresh-worker.js 要被 **background.js（type: module 的 service worker）import** ——
- * 拿 IIFE 去 import 会得到"没有导出、也没有副作用"的模块，SW 直接起不来
- * （2026-10-30 真机踩到：扩展加载后完全找不到 service_worker target）。
+ * 关键参数：
+ *   --splitting            多个入口共享的模块提取成 chunk（这正是减体积的来源）
+ *   --format=esm           页面用 <script type="module">、SW 是 type: module，都吃 ESM
+ *   --outbase=src          产物文件名保持 popup.js / options.js / panel.js / refresh-worker.js
+ *   --chunk-names=chunk-[hash]   chunk 名带内容哈希（变内容就换名，入口里的 import 同步更新）
+ *
+ * ⚠️ --verify 时会额外打一个入口：把 verify-boot.js 与 background.js 一起打包成 ESM
+ *    （verify 模式下 background 也是 bundle，需要和 worker 共用 chunk，不能再用 IIFE）。
  */
-function bundleEsm(entry, outfile) {
-	execFileSync(
-		esbuildBin(),
-		[
-			path.join(SRC, entry),
-			"--bundle",
-			"--format=esm",
-			"--target=chrome102",
-			"--platform=browser",
-			"--legal-comments=none",
-			'--define:process.env.NODE_ENV="production"',
-			"--log-level=warning",
-			`--outfile=${outfile}`
-		],
-		{ cwd: ROOT, stdio: "inherit" }
-	);
+function bundleAll(entries, verifyEntry) {
+	const args = [
+		...entries.map((e) => path.join(SRC, e)),
+		"--bundle",
+		"--splitting",
+		"--format=esm",
+		"--target=chrome102",
+		"--platform=browser",
+		"--legal-comments=none",
+		// React 的入口靠这个环境变量在 开发版/生产版 之间二选一；
+		// 不定义的话 esbuild 会保留两条分支、运行时落到**开发版**（体积大 5 倍且带调试告警）。
+		'--define:process.env.NODE_ENV="production"',
+		"--log-level=warning",
+		`--outdir=${DIST}`,
+		`--outbase=${SRC}`,
+		"--entry-names=[name]",
+		"--chunk-names=chunk-[hash]",
+		// 构建体积报告写到仓库根（_*.json 已在 .gitignore 里），不进扩展包
+		`--metafile=${path.join(ROOT, "_meta.json")}`
+	];
+	if (verifyEntry) args.push(...verifyEntry);
+	execFileSync(esbuildBin(), args, { cwd: ROOT, stdio: "inherit" });
 }
 
 // —— 图标：从 src/icons 复制；缺失则明确报错（避免商店上架时才发现没图标）——
@@ -263,11 +256,16 @@ ensureDir(DIST);
 			if (!same) bad++;
 		}
 		// 打包产物（js）与图标也要比
-		for (const rel of ["popup.js", "options.js", "panel.js"]) {
+		for (const rel of ["popup.js", "options.js", "panel.js", "refresh-worker.js"]) {
 			if (!fs.existsSync(path.join(DIST, rel))) {
 				console.error(`  缺失  ${rel}（需先 build）`);
 				bad++;
 			}
+		}
+		// 代码分割后必须有共享 chunk，否则说明 --splitting 没生效（core 又被复制多份）
+		if (!fs.readdirSync(DIST).some((f) => /^chunk-.+\.js$/.test(f))) {
+			console.error("  缺失  共享 chunk（chunk-*.js）—— --splitting 没生效？");
+			bad++;
 		}
 		if (bad) fail(`${bad} 项与 dist/ 不一致 —— 请运行 node build.mjs`);
 		console.log("\n✓ dist/ 与源码一致");
@@ -289,21 +287,27 @@ ensureDir(DIST);
 			console.log(`  已移除历史验证产物 ${stale}`);
 		}
 	}
-	// 后台抓取 worker：内联 core，让 service worker 也能真抓（启动即抓 / 间隔抓）
-	bundleEsm("refresh-worker.js", path.join(DIST, "refresh-worker.js"));
-	bundle("popup.js", path.join(DIST, "popup.js"));
-	bundle("options.js", path.join(DIST, "options.js"));
-	// 新日程面板：单独成包（内含 React 与一比一移植的 ScheduleView）
-	bundle("panel.js", path.join(DIST, "panel.js"));
-	// --verify：把"启动自检"打进 background.js（service worker 一定会执行，是验证的可靠落点）
+	// 一次构建产出全部 JS：四个入口 + 共享 core chunk
+	const entries = ["popup.js", "options.js", "panel.js", "refresh-worker.js"];
 	if (VERIFY) {
-		const orig = fs.readFileSync(path.join(SRC, "background.js"), "utf8");
-		fs.writeFileSync(path.join(SRC, "_bg-verify-entry.js"), 'import "./verify-boot.js";\n' + orig, "utf8");
+		// --verify：把"启动自检"打进一个 ESM 入口，构建后改名为 background.js
+		// （service worker 一定会执行，是验证的可靠落点）
+		const tmpEntry = "_bg-verify-entry.js";
+		fs.writeFileSync(
+			path.join(SRC, tmpEntry),
+			'import "./verify-boot.js";\nimport "./background.js";\n',
+			"utf8"
+		);
 		try {
-			bundle("_bg-verify-entry.js", path.join(DIST, "background.js"));
+			bundleAll(entries, [path.join(SRC, tmpEntry)]);
 		} finally {
-			fs.rmSync(path.join(SRC, "_bg-verify-entry.js"), { force: true });
+			fs.rmSync(path.join(SRC, tmpEntry), { force: true });
 		}
+		const built = path.join(DIST, "_bg-verify-entry.js");
+		if (!fs.existsSync(built)) fail("--verify 构建缺少 _bg-verify-entry.js 产物");
+		fs.renameSync(built, path.join(DIST, "background.js"));
+	} else {
+		bundleAll(entries);
 	}
 	// 验证入口（可选）：自检跑在 background service worker 里（见 src/verify-boot.js）。
 	// 这里不再产出额外的验证页面 —— 经实测，本机 Chrome 下 chrome-extension:// 页面难以可靠加载，
@@ -322,9 +326,11 @@ ensureDir(DIST);
 		return { size: b.length, sha: crypto.createHash("sha256").update(b).digest("hex") };
 	};
 	console.log(`\n写出 dist/（扩展版本 ${pkg.version}，内联核心 gacha-calendar-core@${corePkg.version}）`);
-	for (const rel of ["manifest.json", "background.js", "popup.js", "options.js", "core-version.js", "build-info.js"]) {
+	const listed = ["manifest.json", "background.js", ...fs.readdirSync(DIST).filter((f) => f.endsWith(".js")).sort()];
+	for (const rel of [...new Set(listed)]) {
+		if (!fs.existsSync(path.join(DIST, rel))) continue;
 		const d = digest(rel);
-		console.log(`  ${rel.padEnd(18)} ${String(d.size).padStart(7)} B  sha256=${d.sha.slice(0, 16)}`);
+		console.log(`  ${rel.padEnd(22)} ${String(d.size).padStart(7)} B  sha256=${d.sha.slice(0, 16)}`);
 	}
 
 	if (ZIP) {

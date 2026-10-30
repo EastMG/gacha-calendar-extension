@@ -18,8 +18,23 @@ node build.mjs --zip   # 额外打出 release/*.zip（用于提交商店与 GitH
 ### 为什么必须构建
 
 MV3 **禁止远程代码**（不能从 CDN 取代码），所以 `gacha-calendar-core` 必须内联进扩展自己的 js。
-`build.mjs` 用 esbuild 把依赖树打成 `dist/popup.js` 与 `dist/options.js`，构建产物带内容哈希便于核对；
-`background.js` 不依赖 core，原样复制以保持可读可审。
+
+`build.mjs` 用**一次** esbuild 构建产出四个入口 + **一份共享 core**（代码分割）：
+
+```
+dist/popup.js            旧 popup 入口        （几 KB）
+dist/options.js          设置页入口
+dist/panel.js            新面板入口（含 React，唯一的大块）
+dist/refresh-worker.js   后台抓取入口
+dist/chunk-<hash>.js     共享块：core 只在这里出现一次
+dist/background.js       原样复制（SW），import ./refresh-worker.js 等
+```
+
+- 入口之间靠 `import "./chunk-<hash>.js"` 连接，**HTML 里只引入口**，不要写 chunk。
+- chunk 名带内容哈希：内容一变名字就变，入口里的 import 由构建自动更新。
+- 体积基准：四个入口各自内联 core 时 dist ≈ 2.1 MB；分割后 ≈ 780 KB（zip 约 240 KB）。
+- `verify.mjs` 会检查：core 只内联一份（按 `function createEngine` 判断）、
+  所有 JS 的相对 import 都真实存在、全部 JS 合计 < 1.2 MB。
 
 ### 升级抓取核心
 

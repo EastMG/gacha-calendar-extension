@@ -19,6 +19,17 @@ import { resolveManifestText } from "./tools/i18n.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(ROOT, "dist");
+// 代码分割后产物里多了 chunk-*.js；零远程代码要覆盖**全部** js，不能只查入口
+const walkDistJs = (dir = DIST, base = "") => {
+	const out = [];
+	for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+		const rel = base ? base + "/" + e.name : e.name;
+		if (e.isDirectory()) out.push(...walkDistJs(path.join(dir, e.name), rel));
+		else if (e.name.endsWith(".js")) out.push(rel);
+	}
+	return out;
+};
+const jsFiles = walkDistJs().sort();
 
 let failed = 0;
 const problems = [];
@@ -85,10 +96,18 @@ check(
 // background（原样复制的 ESM service worker）里每个相对 import 都必须真的在 dist 里 ——
 // 少一个文件时浏览器只会"扩展加载失败、没有 SW"，报错极难定位（build 也不报）。
 {
-	const bg = fs.readFileSync(path.join(DIST, "background.js"), "utf8");
-	const rels = [...bg.matchAll(/from\s+"(\.\/[^"]+)"/g)].map((m) => m[1]);
-	const missing = rels.filter((rel) => !fs.existsSync(path.join(DIST, rel.replace(/^\.\//, ""))));
-	check("background 的 import 都能在 dist 找到", missing.length === 0, missing.join(", ") || (rels.length ? rels.join(", ") : "（无相对 import）"));
+	// 每个 JS 的相对 import 都必须真实存在（入口 import chunk、background import worker/proxy 等）。
+	// 少一个文件时浏览器只会"扩展加载失败"，报错极难定位（2026-10-30 真机踩过一次）。
+	const missing = [];
+	for (const rel of jsFiles) {
+		if (!rel.endsWith(".js")) continue;
+		const src = fs.readFileSync(path.join(DIST, rel), "utf8");
+		for (const m of src.matchAll(/from\s+"(\.\/[^"]+)"/g)) {
+			const target = m[1].replace(/^\.\//, "");
+			if (!fs.existsSync(path.join(DIST, target))) missing.push(rel + " → " + target);
+		}
+	}
+	check("所有 JS 的相对 import 都能在 dist 找到", missing.length === 0, missing.slice(0, 6).join(", "));
 }
 
 console.log("\n=== 2. 版本一致性 ===");
@@ -152,7 +171,7 @@ const iconMissing = dom.iconHosts.filter((h) => !manifestCovers(new Set(dom.mani
 check("图标域名也在 host_permissions 里", iconMissing.length === 0, iconMissing.length ? iconMissing.join(", ") : `${dom.iconHosts.length} 个图标域名均已授权`);
 
 console.log("\n=== 4. 零远程代码（MV3 硬性要求）===");
-const jsFiles = ["background.js", "popup.js", "options.js", "panel.js", "core-version.js"];
+// （jsFiles / walkDistJs 定义在文件前部，import 完整性检查也要用）
 const remoteCodePatterns = [
 	{ re: /\bimport\s*\(\s*["'`]https?:/g, label: "动态 import 远程 URL" },
 	{ re: /\bimportScripts\s*\(/g, label: "importScripts" },
@@ -176,7 +195,8 @@ for (const f of jsFiles) {
 }
 
 console.log("\n=== 5. core 是否真的内联 ===");
-const popupSrc = fs.readFileSync(path.join(DIST, "popup.js"), "utf8");
+// 代码分割后 core 可能落在 chunk 里，所以把所有 js 拼起来再找特征
+const allJsText = jsFiles.map((rel) => fs.readFileSync(path.join(DIST, rel), "utf8")).join("\n");
 // core 的来源注册表里有这些特征域名；它们是"core 在包里"的实证
 const CORE_MARKERS = [
 	"wiki.biligame.com",
@@ -192,22 +212,34 @@ const CORE_MARKERS = [
 	"gachatracker.app",
 	"ldshop.gg"
 ];
-const missingMarkers = CORE_MARKERS.filter((m) => !popupSrc.includes(m));
-check(`UI 产物内联了 core（含 ${CORE_MARKERS.length} 个来源特征域名）`, missingMarkers.length === 0, missingMarkers.join(", "));
+const missingMarkers = CORE_MARKERS.filter((m) => !allJsText.includes(m));
+check(`产物内联了 core（含 ${CORE_MARKERS.length} 个来源特征域名）`, missingMarkers.length === 0, missingMarkers.join(", "));
+
+// core 只允许出现一份：找含特征域名的最大文件（即 core chunk），并确认只有一个大块
+const jsSizes = jsFiles.map((rel) => ({ rel, size: fs.statSync(path.join(DIST, rel)).size }));
+// ⚠️ 不能用"含全部来源域名"当判据 —— proxy.js / refresh-worker.js 也写着同一份 ALLOW_HOSTS。
+//    用 core 独有的引擎入口函数来判断"哪份产物真的内联了 core"。
+const CORE_CODE_MARKER = "function createEngine";
+const coreChunks = jsSizes.filter((x) => {
+	const txt = fs.readFileSync(path.join(DIST, x.rel), "utf8");
+	return txt.includes(CORE_CODE_MARKER);
+});
+check("core 只内联一份（不含重复副本）", coreChunks.length === 1, coreChunks.map((x) => x.rel).join(", ") || "未找到含 core 的产物");
 
 // 产物体积下界：core 0.11.x 内联后 popup.js 约 400 KB；若明显偏小说明 core 没被完整打进去。
 // （不设上界，避免每次扩游戏都要调；也不去搜游戏名——见下方说明）
-const popupKb = Math.round(popupSrc.length / 1024);
-check("popup.js 体积达到内联 core 的量级（>250 KB）", popupSrc.length > 250 * 1024, `${popupKb} KB`);
+const totalJsKb = Math.round(jsFiles.reduce((n, rel) => n + fs.statSync(path.join(DIST, rel)).size, 0) / 1024);
+const coreKb = Math.round((coreChunks[0] ? coreChunks[0].size : 0) / 1024);
+check("core 所在产物达到内联体量（>250 KB）", (coreChunks[0] ? coreChunks[0].size : 0) > 250 * 1024, `${coreKb} KB`);
+check("全部 JS 合计 < 1.2 MB（代码分割后的合理上界）", totalJsKb < 1200, `${totalJsKb} KB`);
 
 // 新日程面板（实验特性）：页面宿主、样式与打包产物必须都在 dist 里，
 // 否则开启开关后点工具栏会打不开页面（且不会有任何提示）。
 for (const f of ["popup-panel.html", "panel.js", "schedule.css"]) {
 	check(`新面板产物存在：${f}`, fs.existsSync(path.join(DIST, f)));
 }
-const panelSrc = fs.existsSync(path.join(DIST, "panel.js")) ? fs.readFileSync(path.join(DIST, "panel.js"), "utf8") : "";
-check("panel.js 内联了 React（生产版，含 react-dom 特征）", /react-dom|Minified React error/.test(panelSrc), `${Math.round(panelSrc.length / 1024)} KB`);
-check("panel.js 内含日程视图根类名", panelSrc.includes("gacha-cal-sched"));
+check("React（生产版）已内联到产物", /react-dom|Minified React error/.test(allJsText));
+check("产物内含日程视图根类名", allJsText.includes("gacha-cal-sched"));
 
 // core 的条目数据：**从 core 运行时取**，不写死数字（core 已从 11 款扩到 28 款）。
 // 注意：这里**不去产物里搜游戏名**。实测产物中中文被 esbuild 以大写 \uXXXX 转义，
