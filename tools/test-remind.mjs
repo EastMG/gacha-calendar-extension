@@ -14,7 +14,9 @@ import {
 	remindTestToastOf,
 	remindTickOf,
 	remindToastOf,
-	remindWindowOf
+	remindWindowOf,
+	remindGamesOf,
+	filterRemindGames
 } from "../src/remind.js";
 
 let failed = 0;
@@ -157,6 +159,17 @@ console.log("\n=== 7. 测试通知文案（remindTestToastOf）===");
 	check("时间精确到秒", toast.lines[2] === "时间：2026-10-30 12:34:56", toast.lines[2]);
 	check("说明行", toast.lines[3].includes("系统通知链路是通的"), toast.lines[3]);
 	check("空应用名回落默认", remindTestToastOf(now, "  ").lines[0] === "发送者：" + NOTIFY_NAME_DEFAULT);
+}
+
+console.log("\n=== 8. 逐游戏白名单（remindGames）===");
+{
+	const games = { genshin: { name: "原神" }, hsr: { name: "星铁" }, zzz: { name: "绝区零" } };
+	check("键缺失 ⇒ 不限制（全部）", Object.keys(filterRemindGames(games, undefined)).length === 3);
+	check("坏值（字符串）⇒ 不限制", Object.keys(filterRemindGames(games, "genshin")).length === 3);
+	check("列表只留命中的", JSON.stringify(Object.keys(filterRemindGames(games, ["genshin", "zzz"]))) === '["genshin","zzz"]');
+	check("空数组 ⇒ 一个都不提醒", Object.keys(filterRemindGames(games, [])).length === 0);
+	check("列表里不存在的 id 不影响结果", Object.keys(filterRemindGames(games, ["nope"])).length === 0);
+	check("数字 id 也按字符串比较", remindGamesOf([1, "2"]).has("1") && remindGamesOf([1, "2"]).has("2"));
 }
 
 console.log("\n=== 8. 状态归一（remindStateOf）===");

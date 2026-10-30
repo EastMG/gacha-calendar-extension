@@ -48,6 +48,7 @@ src/storage.js         core 需要的 storage：chrome.storage.local 封装
 src/view-helpers.js    展示层纯函数（倒计时/角色名精简/悬停文案/行渲染模型）
 src/entry-meta.js      来源显示名口径（与 core 的 getDefaultSourceName 逐支对齐）
 src/ics.js             日历导出（RFC 5545 纯函数：转义 / 75-octet 折行 / UID / 生成）
+（设置键）remindGames  "到期提醒（送达）"的逐游戏白名单（数组；空数组 = 不提醒；缺键 = 不限制）
 （设置键）refreshMode  "startup"（默认，浏览器启动后首次打开抓一轮）/ "interval"（按 refreshMinutes 间隔）
 src/proxy.js           跨域代发白名单 + proxyFetch（SW 与后台抓取共用）
 src/refresh-worker.js  后台抓取 worker（内联 core；只负责 runRefreshTick 的判定与抓取）

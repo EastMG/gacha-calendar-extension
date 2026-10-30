@@ -26,7 +26,8 @@ import {
 	remindItemsOf,
 	remindTickOf,
 	remindToastOf,
-	remindTestToastOf
+	remindTestToastOf,
+	filterRemindGames
 } from "./remind.js";
 
 // 白名单与代发实现见 ./proxy.js（background 原样复制进 dist，所以那份文件也要复制）
@@ -226,7 +227,15 @@ const REMIND_STATE_KEY = "remindState";
 
 async function checkReminders() {
 	try {
-		const store = await chrome.storage.local.get(["lastData", "remindOn", "remindEndNodes", "notifyName", REMIND_STATE_KEY, "notify"]);
+		const store = await chrome.storage.local.get([
+			"lastData",
+			"remindOn",
+			"remindEndNodes",
+			"remindGames",
+			"notifyName",
+			REMIND_STATE_KEY,
+			"notify"
+		]);
 		// 默认开（与 DSH 的 remindOn 默认一致）；兼容 0.2.33 的旧键 notify（那版默认关）
 		const on = typeof store.remindOn === "boolean" ? store.remindOn : store.notify === false ? false : true;
 		if (!on) return;
@@ -237,7 +246,9 @@ async function checkReminders() {
 			map = {};
 		}
 		const now = Date.now();
-		const items = remindItemsOf(map, now);
+		// remindGames = 逐游戏白名单（列表里有谁就提醒谁；空数组 = 一个都不提醒）
+		// 角标不按这个白名单算 —— 它是"还有几条快到期"的全局概览，与"要不要推送"是两件事
+		const items = remindItemsOf(filterRemindGames(map, store.remindGames), now);
 		const { toNotify, stateNext } = remindTickOf(now, items, { remindEndNodes: store.remindEndNodes }, store[REMIND_STATE_KEY]);
 		for (const n of toNotify) {
 			const toast = remindToastOf(n, now, store.notifyName);
@@ -299,7 +310,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 	if (area !== "local") return;
 	if (changes.autoRefresh || changes.refreshMode || changes.refreshMinutes) tickAndUpdate();
 	if (changes.lastData || changes.badge) updateBadge();
-	if (changes.lastData || changes.remindOn) checkReminders();
+	if (changes.lastData || changes.remindOn || changes.remindGames) checkReminders();
 });
 // SW 每次被唤醒（例如用户点图标）也顺手跑一次管道，避免等满 30 分钟
 tickAndUpdate();

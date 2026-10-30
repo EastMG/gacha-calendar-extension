@@ -169,6 +169,32 @@ export function remindWindowOf(text, nowMs) {
 }
 
 /**
+ * 「到期提醒（送达）」的逐游戏白名单（对应 core 的 `remindGames`）。
+ *
+ * 语义（与 DSH 一致，**普通列表**）：列表里有谁就提醒谁；**空数组 = 一个都不提醒**。
+ * 键缺失 / 不是数组 ⇒ 视为"不限制"（等价于 DSH 的出厂默认：所有非 defaultHidden 的条目）。
+ * 返回 `null` 表示不限制，否则返回 Set。
+ */
+export function remindGamesOf(value) {
+	if (!Array.isArray(value)) return null;
+	return new Set(value.map((x) => String(x)));
+}
+
+/**
+ * 按白名单过滤 lastData 的 games。注意**不要**把"空数组"当成"没配置" ——
+ * 空数组就是"用户把所有游戏都取消勾选了"，应当一个都不提醒（与 DSH 一致）。
+ */
+export function filterRemindGames(games, value) {
+	const listed = remindGamesOf(value);
+	if (!listed) return games || {};
+	const out = {};
+	for (const [id, rec] of Object.entries(games || {})) {
+		if (listed.has(String(id))) out[id] = rec;
+	}
+	return out;
+}
+
+/**
  * lastData 的 games → 提醒条目（对应 core 的 `remindItemsOf`）。
  * 每个游戏侧最多两条：结束（T=endTs）/ 开始（T=startTs）；已经过去的方向不派生。
  */
