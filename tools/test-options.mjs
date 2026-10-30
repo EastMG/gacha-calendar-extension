@@ -169,11 +169,18 @@ const document = {
 
 // options.html 里真实存在的 id（缺了 options.js 会在取元素时报错，这里据此校验）
 const HTML_IDS = [
-	"count",
-	"entries",
-	"allowed-hosts",
 	"autoRefresh",
 	"refreshMinutes",
+	"badge",
+	"remindOn",
+	"remindChips",
+	"testNotify",
+	"testNotifyHint",
+	"exportIcs",
+	"newPanel",
+	"panelTop",
+	"entries",
+	"allowed-hosts",
 	"resetOrder",
 	"removed-card",
 	"removed-list",
@@ -181,7 +188,9 @@ const HTML_IDS = [
 	"sc-summary",
 	"sc-list",
 	"ver",
-	"core-ver"
+	"core-ver",
+	"build-id",
+	"bg-info"
 ];
 for (const id of HTML_IDS) document.getElementById(id);
 
