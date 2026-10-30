@@ -18,7 +18,7 @@
 const BUILD_ID = "__BUILD_ID__";
 
 import { proxyFetch } from "./proxy.js";
-import { runRefreshTick } from "./refresh-worker.js";
+import { DEFAULT_REMIND_GAMES, runRefreshTick } from "./refresh-worker.js";
 
 import {
 	NOTIFY_NAME_DEFAULT,
@@ -248,7 +248,7 @@ async function checkReminders() {
 		const now = Date.now();
 		// remindGames = 逐游戏白名单（列表里有谁就提醒谁；空数组 = 一个都不提醒）
 		// 角标不按这个白名单算 —— 它是"还有几条快到期"的全局概览，与"要不要推送"是两件事
-		const items = remindItemsOf(filterRemindGames(map, store.remindGames), now);
+		const items = remindItemsOf(filterRemindGames(map, store.remindGames, DEFAULT_REMIND_GAMES), now);
 		const { toNotify, stateNext } = remindTickOf(now, items, { remindEndNodes: store.remindEndNodes }, store[REMIND_STATE_KEY]);
 		for (const n of toNotify) {
 			const toast = remindToastOf(n, now, store.notifyName);

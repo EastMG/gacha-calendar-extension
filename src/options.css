@@ -196,7 +196,7 @@ input[type="text"] {
 .grid-head,
 .entry {
 	display: grid;
-	grid-template-columns: minmax(150px, 1fr) 56px 56px minmax(150px, 1.1fr) minmax(150px, 1.1fr) 92px;
+	grid-template-columns: minmax(150px, 1fr) 56px 56px minmax(150px, 1.1fr) minmax(150px, 1.1fr) 56px 92px;
 	gap: 8px;
 	align-items: center;
 }
@@ -371,4 +371,11 @@ input[type="color"].color-swatch::-webkit-color-swatch {
 /* 载入失败副标题（正常时元素 hidden，不占位） */
 .sub.is-error {
 	color: var(--danger, #c62828);
+}
+
+/* `hidden` 属性必须真的隐藏元素。
+   踩过：`.hint.block { display: block }` 是作者样式，优先级高于 UA 样式表里的 [hidden]{display:none}
+   ⇒ 带 hidden 的提示条照旧显示（提醒白名单的空态警告就是这样冒出来的）。 */
+[hidden] {
+	display: none !important;
 }

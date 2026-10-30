@@ -78,11 +78,15 @@
 				<h2>条目</h2>
 				<p class="hint block">自定义地址须在扩展权限清单内，否则不抓取（无提示）。</p>
 				<div class="grid-head">
-					<span>游戏</span><span>展示</span><span>颜色</span><span>卡池来源</span><span>活动来源</span><span>操作</span>
+					<span>游戏</span><span>展示</span><span>提醒</span><span>卡池来源</span><span>活动来源</span><span>颜色</span><span>操作</span>
 				</div>
+				<p class="hint block" id="remind-empty" hidden>
+					「提醒」一个都没勾 ⇒ 到期提醒不会弹任何通知。点「全部提醒」可把当前展示中的游戏都勾上。
+				</p>
 				<div id="entries"></div>
 				<datalist id="allowed-hosts"></datalist>
 				<div class="row end">
+					<button id="remindAll" class="btn" type="button">全部提醒</button>
 					<button id="resetOrder" class="btn" type="button">恢复默认顺序</button>
 				</div>
 			</section>

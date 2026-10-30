@@ -34,6 +34,12 @@ const transport = {
 
 const engine = createEngine({ transport, storage });
 
+/** 出厂提醒白名单（core DEFAULT_SETTINGS.remindGames = 出厂可见条目），供 background 兜底。 */
+export const DEFAULT_REMIND_GAMES = (() => {
+	const v = engine.__test && engine.__test.DEFAULT_SETTINGS && engine.__test.DEFAULT_SETTINGS.remindGames;
+	return Array.isArray(v) ? v.map(String) : [];
+})();
+
 /** 同一时间只允许一轮（多处触发撞车时共用同一个 Promise）。 */
 let inFlight = null;
 

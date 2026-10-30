@@ -184,8 +184,10 @@ export function remindGamesOf(value) {
  * 按白名单过滤 lastData 的 games。注意**不要**把"空数组"当成"没配置" ——
  * 空数组就是"用户把所有游戏都取消勾选了"，应当一个都不提醒（与 DSH 一致）。
  */
-export function filterRemindGames(games, value) {
-	const listed = remindGamesOf(value);
+export function filterRemindGames(games, value, fallback) {
+	// 缺键 / 坏值 ⇒ 用**出厂白名单**（core DEFAULT_SETTINGS.remindGames = 出厂可见条目）；
+	// 与 DSH 设置页的读取口径一致：读取坏掉不能表现为"全都不勾"，也不能变成"全提醒"。
+	const listed = remindGamesOf(value) || remindGamesOf(fallback);
 	if (!listed) return games || {};
 	const out = {};
 	for (const [id, rec] of Object.entries(games || {})) {

@@ -51,6 +51,8 @@ const el = {
 	exportIcs: document.getElementById("exportIcs"),
 	refreshMinutes: document.getElementById("refreshMinutes"),
 	resetOrder: document.getElementById("resetOrder"),
+	remindAll: document.getElementById("remindAll"),
+	remindEmpty: document.getElementById("remind-empty"),
 	removedCard: document.getElementById("removed-card"),
 	removedList: document.getElementById("removed-list"),
 	selfCheck: document.getElementById("selfCheck"),
@@ -87,7 +89,9 @@ let cfg = {
 	// 到期提醒：默认**开**（与 DSH 的 remindOn 默认一致）；用户可在设置页关闭
 	remindOn: true,
 	// 提醒档位（到期前多少小时）：字符串，与 DSH 的 remindEndNodes 同格式
-	remindEndNodes: "72,24,6,2"
+	remindEndNodes: "72,24,6,2",
+	// 推送白名单；null = 尚未落盘（按 core 出厂白名单显示）
+	remindGames: null
 };
 /** 生效中的条目（core 已按 removed 过滤）元信息。 */
 let allGames = [];
@@ -240,6 +244,24 @@ function renderRefreshOptions() {
 		})
 	);
 	el.refreshMinutes.value = cfg.refreshMode === "interval" ? String(current) : REFRESH_STARTUP.value;
+	// 白名单空 = 一条通知都不会发 ⇒ 显式警告（DSH 同款）
+	if (el.remindEmpty) el.remindEmpty.hidden = remindIds().length !== 0;
+}
+
+/** 出厂提醒白名单（core 的 DEFAULT_SETTINGS.remindGames）；取不到就空数组。 */
+function defaultRemindGames() {
+	const v = engine.__test && engine.__test.DEFAULT_SETTINGS && engine.__test.DEFAULT_SETTINGS.remindGames;
+	return Array.isArray(v) ? v.map(String) : [];
+}
+
+/** 当前生效的提醒白名单：用户写过数组就用数组（空数组 = 一个都不提醒），否则用出厂列表。 */
+function remindIds() {
+	return Array.isArray(cfg.remindGames) ? cfg.remindGames : defaultRemindGames();
+}
+
+/** 某条目是否在白名单里。 */
+function remindAllowed(id) {
+	return remindIds().includes(String(id));
 }
 
 function renderEntry(game, index, order) {
@@ -277,6 +299,27 @@ function renderEntry(game, index, order) {
 	});
 	showCell.appendChild(cb);
 	row.appendChild(showCell);
+
+	// 提醒开关：只决定"到期送达要不要包含这一条"（与展示独立；未展示的行置灰禁用）
+	const visibleNow = vis.isChecked(game.id);
+	const remindCell = document.createElement("div");
+	remindCell.className = "cell-center";
+	if (!visibleNow) remindCell.style.opacity = "0.45";
+	const remindCb = document.createElement("input");
+	remindCb.type = "checkbox";
+	remindCb.checked = remindAllowed(game.id);
+	remindCb.disabled = !visibleNow;
+	remindCb.title = visibleNow ? "到期提醒是否包含这一条" : "未展示的条目不会提醒（先勾「展示」）";
+	remindCb.addEventListener("change", () => {
+		const cur = remindIds();
+		const next = remindCb.checked
+			? [...new Set([...cur, String(game.id)])]
+			: cur.filter((x) => x !== String(game.id));
+		// 普通列表语义：空数组 = 一个都不提醒（不回落出厂）
+		commit({ remindGames: next });
+	});
+	remindCell.appendChild(remindCb);
+	row.appendChild(remindCell);
 
 	// 强调色：原生取色器（点色块选色）＋「↺」恢复默认
 	// 存储形如 { 游戏id: "#rrggbb" }；没有该键 = 用 core 算出的出厂色。
@@ -316,13 +359,13 @@ function renderEntry(game, index, order) {
 		});
 		colorCell.appendChild(reset);
 	}
-	row.appendChild(colorCell);
 
 	// 卡池来源 / 活动来源
 	const gachaSel = renderSourceSelect(game, urls, false);
 	const eventSel = renderSourceSelect(game, eventUrls, true);
 	row.appendChild(gachaSel);
 	row.appendChild(eventSel);
+	row.appendChild(colorCell);
 
 	// 操作：上移 / 下移 / 删除
 	const ops = document.createElement("div");
@@ -671,6 +714,12 @@ el.refreshMinutes.addEventListener("change", () => {
 		else commit({ refreshMode: "interval", refreshMinutes: Number(v) || 24 * 60 });
 	});
 el.resetOrder.addEventListener("click", () => commit({ order: null }));
+// 「全部提醒」= 把当前**展示中**的条目写进白名单（与 DSH 一致）
+if (el.remindAll) el.remindAll.addEventListener("click", () => {
+	const visNow = createVisibility(engine, cfg);
+	const ids = orderedGames().filter((g) => visNow.isChecked(g.id)).map((g) => String(g.id));
+	commit({ remindGames: ids });
+});
 el.selfCheck.addEventListener("click", () => runSelfCheck());
 
 (async () => {
@@ -727,6 +776,7 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 			"badge",
 			"remindOn",
 			"remindEndNodes",
+			"remindGames",
 			"notifyName"
 		])
 	]);
@@ -753,7 +803,9 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		badge: stored.badge !== false,
 		// 默认开；兼容 0.2.33 之前的旧键 notify（那版默认关）
 		remindOn: typeof stored.remindOn === "boolean" ? stored.remindOn : stored.notify === false ? false : true,
-		remindEndNodes: typeof stored.remindEndNodes === "string" ? stored.remindEndNodes : "72,24,6,2"
+		remindEndNodes: typeof stored.remindEndNodes === "string" ? stored.remindEndNodes : "72,24,6,2",
+		// null = 用出厂白名单（不写死数组，避免"新来源升级后默认不提醒"）
+		remindGames: Array.isArray(stored.remindGames) ? stored.remindGames.map(String) : null
 	};
 	render();
 })().catch((err) => {
