@@ -59,7 +59,7 @@ async function loadState() {
 		engine.listGames(),
 		engine.getCached(),
 		// shown 是 core 0.11.x 新增的键：默认隐藏的条目被用户打开后记在这里
-		readKeys(["order", "hidden", "shown", "lastSource", "refreshMinutes", "autoRefresh"])
+		readKeys(["order", "hidden", "shown", "lastSource", "refreshMinutes", "refreshMode", "autoRefresh"])
 	]);
 	const order = Array.isArray(cfg.order) ? cfg.order : [];
 	// 可见性不能只看 hidden：core 有 5 个条目出厂默认隐藏（判定见 src/visibility.js）
@@ -69,6 +69,7 @@ async function loadState() {
 	state.refreshedAt = cached.refreshedAt || 0;
 	state.lastSource = cfg.lastSource || "none";
 	state.refreshMinutes = Number(cfg.refreshMinutes) || DEFAULT_REFRESH_MINUTES;
+	state.refreshMode = cfg.refreshMode === "interval" ? "interval" : "startup";
 	state.autoRefresh = cfg.autoRefresh !== false;
 }
 
@@ -201,6 +202,20 @@ async function doRefresh() {
 /** 打开 popup 时按设置的频率判断是否需要自动抓一轮（避免每次点开都联网）。 */
 async function autoRefreshIfDue() {
 	if (!state.autoRefresh) return;
+	// 刷新时机 = 浏览器启动时：看 background 在本会话开始时打的标记，抓一轮后清掉
+	if (state.refreshMode === "startup") {
+		let pending = false;
+		try {
+			const s = await chrome.storage.session.get("pendingStartRefresh");
+			pending = !!s.pendingStartRefresh;
+			if (pending) await chrome.storage.session.set({ pendingStartRefresh: false });
+		} catch {
+			// 没有 storage.session（老浏览器）：退化成"本次打开还没有数据就抓"
+			pending = !state.refreshedAt;
+		}
+		if (pending || !state.refreshedAt) await doRefresh();
+		return;
+	}
 	const intervalMs = Math.max(1, state.refreshMinutes) * 60 * 1000;
 	const due = !state.refreshedAt || Date.now() - state.refreshedAt >= intervalMs;
 	// 完全没有缓存时也抓一次（首次使用）

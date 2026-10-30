@@ -23,6 +23,9 @@ import { defaultSourceName } from "./entry-meta.js";
 const engine = createEngine({ transport, storage: createStorage() });
 
 /** 刷新频率选项（分钟）——与 DSH 插件一致的按天档位。 */
+/** 刷新时机下拉的第一项：浏览器启动后首次打开时抓一轮（默认）。 */
+const REFRESH_STARTUP = { label: "浏览器启动时", value: "startup" };
+
 const REFRESH_OPTIONS = [
 	{ label: "1 天", minutes: 1 * 24 * 60 },
 	{ label: "5 天", minutes: 5 * 24 * 60 },
@@ -70,6 +73,8 @@ let cfg = {
 	customUrls: {},
 	customEventUrls: {},
 	autoRefresh: true,
+	// 刷新时机："startup" = 浏览器启动后首次打开抓一轮（默认）；"interval" = 按 refreshMinutes 间隔
+	refreshMode: "startup",
 	refreshMinutes: 24 * 60,
 	// 实验特性：新日程面板（默认关，与 DSH 插件同键名同语义）
 	// 默认开启（用户 2026-10-21 指定）
@@ -226,19 +231,16 @@ function render() {
 
 function renderRefreshOptions() {
 	const current = Number(cfg.refreshMinutes) || 24 * 60;
-	const inOptions = REFRESH_OPTIONS.some((o) => o.minutes === current);
-	const opts = inOptions
-		? REFRESH_OPTIONS.slice()
-		: [{ label: `自定义（${current} 分钟）`, minutes: current }, ...REFRESH_OPTIONS];
+	const items = [REFRESH_STARTUP, ...REFRESH_OPTIONS.map((o) => ({ label: o.label, value: String(o.minutes) }))];
 	el.refreshMinutes.replaceChildren(
-		...opts.map((o) => {
+		...items.map((it) => {
 			const op = document.createElement("option");
-			op.value = String(o.minutes);
-			op.textContent = o.label;
+			op.value = it.value;
+			op.textContent = it.label;
 			return op;
 		})
 	);
-	el.refreshMinutes.value = String(current);
+	el.refreshMinutes.value = cfg.refreshMode === "interval" ? String(current) : REFRESH_STARTUP.value;
 }
 
 function renderEntry(game, index, order) {
@@ -664,7 +666,11 @@ if (el.badge) el.badge.addEventListener("change", () => commit({ badge: el.badge
 if (el.remindOn) el.remindOn.addEventListener("change", () => commit({ remindOn: el.remindOn.checked }));
 if (el.testNotify) el.testNotify.addEventListener("click", () => sendTestNotify());
 if (el.exportIcs) el.exportIcs.addEventListener("click", () => exportCalendar());
-el.refreshMinutes.addEventListener("change", () => commit({ refreshMinutes: Number(el.refreshMinutes.value) }));
+el.refreshMinutes.addEventListener("change", () => {
+		const v = el.refreshMinutes.value;
+		if (v === REFRESH_STARTUP.value) commit({ refreshMode: "startup" });
+		else commit({ refreshMode: "interval", refreshMinutes: Number(v) || 24 * 60 });
+	});
 el.resetOrder.addEventListener("click", () => commit({ order: null }));
 el.selfCheck.addEventListener("click", () => runSelfCheck());
 
@@ -715,6 +721,7 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 			"customEventUrls",
 			"autoRefresh",
 			"refreshMinutes",
+			"refreshMode",
 			"newPanel",
 			"panelTop",
 			"gameColors",
@@ -738,6 +745,8 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		),
 		autoRefresh: stored.autoRefresh !== false,
 		refreshMinutes: Number(stored.refreshMinutes) || 24 * 60,
+		// 默认「浏览器启动时」（老配置没有这个键 ⇒ 也按启动时）
+		refreshMode: stored.refreshMode === "interval" ? "interval" : "startup",
 		newPanel: stored.newPanel !== false,
 		panelTop: stored.panelTop === "recent" ? "recent" : "slot",
 		// 落盘是 JSON 字符串；这里解析回对象（{ 游戏id: "#rrggbb" }）

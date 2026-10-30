@@ -93,8 +93,9 @@ const visible = games.filter((g) => !hiddenIds.includes(g.id));
 const info = buildScrapeInfo(visible.map((g) => ({ id: g.id, name: g.name })), result);
 
 const seed = {
-	// 关掉自动抓取：截图用缓存即可，打开时不要联网
-	autoRefresh: false,
+	// 默认值：自动刷新开 + 刷新时机「浏览器启动时」（截图与真实默认一致）
+	autoRefresh: true,
+	refreshMode: "startup",
 	refreshMinutes: 24 * 60,
 	lastSource: "web",
 	lastRefresh: Date.now(),

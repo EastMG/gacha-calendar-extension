@@ -374,13 +374,26 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 		checkReminders();
 	}
 });
+// 「刷新时机 = 浏览器启动时」用：每次浏览器会话开始时打一个标记，
+	// 面板/弹窗第一次打开时看到这个标记就抓一轮，然后清掉。
+	// 用 storage.session（浏览器退出即清空）而不是 local：语义就是"本次会话还没抓过"。
+async function markStartupRefresh() {
+	try {
+		await chrome.storage.session.set({ pendingStartRefresh: true });
+	} catch {
+		/* 老浏览器没有 storage.session 就算了（退化成按间隔刷新） */
+	}
+}
+
 chrome.runtime.onInstalled.addListener(() => {
 	updateBadge();
 	checkReminders();
+	markStartupRefresh();
 });
 chrome.runtime.onStartup.addListener(() => {
 	updateBadge();
 	checkReminders();
+	markStartupRefresh();
 });
 // SW 每次被唤醒（例如用户点图标）也顺手算一次，避免等满 30 分钟
 updateBadge();

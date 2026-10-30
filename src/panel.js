@@ -30,6 +30,7 @@ const state = {
 	refreshedAt: 0,
 	lastSource: "none",
 	refreshMinutes: DEFAULT_REFRESH_MINUTES,
+	refreshMode: "startup",
 	autoRefresh: true,
 	gameColors: "{}",
 	/** 顶部区域二选一："recent" 近期列表 / "slot" 近期卡片（设置页切换） */
@@ -102,7 +103,7 @@ async function loadState() {
 		engine.getCached(),
 		readKeys([
 			"order", "hidden", "shown", "removed", "customEntries", "customUrls", "customEventUrls",
-			"gameColors", "panelTop", "refreshMinutes", "autoRefresh", "lastSource"
+			"gameColors", "panelTop", "refreshMinutes", "refreshMode", "autoRefresh", "lastSource"
 		])
 	]);
 	const order = Array.isArray(cfg.order) ? cfg.order : [];
@@ -114,6 +115,7 @@ async function loadState() {
 	state.refreshedAt = cached.refreshedAt || 0;
 	state.lastSource = cfg.lastSource || "none";
 	state.refreshMinutes = Number(cfg.refreshMinutes) || DEFAULT_REFRESH_MINUTES;
+	state.refreshMode = cfg.refreshMode === "interval" ? "interval" : "startup";
 	state.autoRefresh = cfg.autoRefresh !== false;
 	// 设置页写入的是 JSON 字符串；若读到非字符串（历史数据/异常），按已解析的对象回写一份，别丢掉覆盖色
 	state.gameColors = typeof cfg.gameColors === "string" ? cfg.gameColors : JSON.stringify(colorOverrides);
@@ -180,6 +182,20 @@ async function doRefresh() {
 /** 打开页面时按设置的频率判断是否需要自动抓一轮（与 popup 同口径，避免每次打开都联网）。 */
 async function autoRefreshIfDue() {
 	if (!state.autoRefresh) return;
+	// 刷新时机 = 浏览器启动时：看 background 在本会话开始时打的标记，抓一轮后清掉
+	if (state.refreshMode === "startup") {
+		let pending = false;
+		try {
+			const s = await chrome.storage.session.get("pendingStartRefresh");
+			pending = !!s.pendingStartRefresh;
+			if (pending) await chrome.storage.session.set({ pendingStartRefresh: false });
+		} catch {
+			// 没有 storage.session（老浏览器）：退化成"本次打开还没有数据就抓"
+			pending = !state.refreshedAt;
+		}
+		if (pending || !state.refreshedAt) await doRefresh();
+		return;
+	}
 	const intervalMs = Math.max(1, state.refreshMinutes) * 60 * 1000;
 	const due = !state.refreshedAt || Date.now() - state.refreshedAt >= intervalMs;
 	if (due) await doRefresh();
