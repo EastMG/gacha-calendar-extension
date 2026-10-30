@@ -39,6 +39,7 @@ const REFRESH_OPTIONS = [
 const el = {
 	entries: document.getElementById("entries"),
 	allowedHosts: document.getElementById("allowed-hosts"),
+	loadError: document.getElementById("load-error"),
 	autoRefresh: document.getElementById("autoRefresh"),
 	newPanel: document.getElementById("newPanel"),
 	panelTop: document.getElementById("panelTop"),
@@ -756,9 +757,12 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 	};
 	render();
 })().catch((err) => {
-	if (el.entries) {
-		el.entries.textContent = "载入失败：" + String((err && err.message) || err);
+	// 失败提示放回副标题位置（正常时该元素 hidden，不显示任何东西）
+	const msg = "载入失败：" + String((err && err.message) || err);
+	if (el.loadError) {
+		el.loadError.textContent = msg;
+		el.loadError.hidden = false;
 	} else {
-		console.error("设置页载入失败：", err);
+		console.error(msg);
 	}
 });

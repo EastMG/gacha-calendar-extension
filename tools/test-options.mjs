@@ -169,6 +169,7 @@ const document = {
 
 // options.html 里真实存在的 id（缺了 options.js 会在取元素时报错，这里据此校验）
 const HTML_IDS = [
+	"load-error",
 	"autoRefresh",
 	"refreshMinutes",
 	"badge",

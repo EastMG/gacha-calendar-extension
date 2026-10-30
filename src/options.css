@@ -367,3 +367,8 @@ input[type="color"].color-swatch::-webkit-color-swatch {
 	border-radius: 4px;
 	opacity: 0.85;
 }
+
+/* 载入失败副标题（正常时元素 hidden，不占位） */
+.sub.is-error {
+	color: var(--danger, #c62828);
+}
