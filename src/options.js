@@ -54,7 +54,8 @@ const el = {
 	scSummary: document.getElementById("sc-summary"),
 	scList: document.getElementById("sc-list"),
 	ver: document.getElementById("ver"),
-	coreVer: document.getElementById("core-ver")
+	coreVer: document.getElementById("core-ver"),
+	buildId: document.getElementById("build-id")
 };
 
 /** 当前设置快照（内存态；每次改动后落盘并重渲染）。
@@ -672,6 +673,12 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		el.coreVer.textContent = mod.CORE_VERSION;
 	} catch {
 		el.coreVer.textContent = "—";
+	}
+	try {
+		const bi = await import("./build-info.js");
+		if (el.buildId) el.buildId.textContent = bi.BUILD_ID;
+	} catch {
+		if (el.buildId) el.buildId.textContent = "—";
 	}
 
 	// 主机白名单：供自定义地址输入框提示可选范围（与 manifest 同源）

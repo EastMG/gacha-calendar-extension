@@ -259,13 +259,33 @@ ensureDir(DIST);
 	// 这里不再产出额外的验证页面 —— 经实测，本机 Chrome 下 chrome-extension:// 页面难以可靠加载，
 	// 而 service worker 一定会执行，是更可信的验证落点。
 
+	// 构建标记：设置页「关于」显示它，用来区分"加载的是不是最新一次构建"
+	// （版本号要维护者下令才改，所以开发期靠这个标记辨认构建新旧）
+	const buildId = (() => {
+		let sha = "nogit";
+		try {
+			sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
+		} catch {
+			/* 没有 git 也能构建 */
+		}
+		const d = new Date();
+		const pad = (n) => String(n).padStart(2, "0");
+		const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+		return `${sha}+${stamp}`;
+	})();
+	fs.writeFileSync(
+		path.join(DIST, "build-info.js"),
+		`// 由 build.mjs 生成（不要手改）\nexport const BUILD_ID = ${JSON.stringify(buildId)};\nexport const BUILT_AT = ${JSON.stringify(new Date().toISOString())};\n`,
+		"utf8"
+	);
+
 	// 产物摘要（便于人工核对与写 release notes）
 	const digest = (rel) => {
 		const b = fs.readFileSync(path.join(DIST, rel));
 		return { size: b.length, sha: crypto.createHash("sha256").update(b).digest("hex") };
 	};
 	console.log(`\n写出 dist/（扩展版本 ${pkg.version}，内联核心 gacha-calendar-core@${corePkg.version}）`);
-	for (const rel of ["manifest.json", "background.js", "popup.js", "options.js", "core-version.js"]) {
+	for (const rel of ["manifest.json", "background.js", "popup.js", "options.js", "core-version.js", "build-info.js"]) {
 		const d = digest(rel);
 		console.log(`  ${rel.padEnd(18)} ${String(d.size).padStart(7)} B  sha256=${d.sha.slice(0, 16)}`);
 	}

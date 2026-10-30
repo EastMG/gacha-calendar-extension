@@ -83,23 +83,29 @@ function hostAllowed(hostname) {
 }
 
 /**
- * 消息来源校验：只接受本扩展自己的页面（popup / options / 扩展页）。
- * 其他网页/内容脚本一律拒绝。
+ * 消息来源校验：只接受**本扩展自己**发来的消息。
  *
- * ⚠️ 不能只看 `sender.tab === undefined`（2026-10-30 真机踩到）：
- *    设置页是用 `chrome.runtime.openOptionsPage()` 开在**标签页**里的，此时 `sender.tab` 是有的，
- *    旧实现会把设置页自己发的消息判成 untrusted —— 「发送测试通知」直接回 `untrusted-sender`，
- *    （同理，设置页的解析器自检走 proxyFetch 也会被拒）。
- *    正确判据是**发送者 URL 属于本扩展**：`chrome-extension://<本扩展 id>/…`。
- *    扩展没有 content script，网页里的消息 `sender.id` 为空 / URL 不是扩展源，仍会被拒。
+ * 判据只看 `sender.id`：本扩展**没有 content script**（manifest 里没有 content_scripts），
+ * 所以能带上本扩展 id 的发送者只有扩展自身的页面/后台。网页发来的消息走的是
+ * `chrome.runtime.onMessageExternal`（本扩展没注册），压根到不了这里。
+ *
+ * 踩过的两个坑（2026-10-30）：
+ *   ① 旧判据 `sender.tab === undefined`：设置页是 openOptionsPage() 开在**标签页**里的（有 tab），
+ *      于是设置页自己发的消息被判 untrusted ——「发送测试通知」失败，
+ *      **设置页的解析器自检**（走 proxyFetch）也会被拒。
+ *   ② 第二版改成"看 sender.url 是否 chrome-extension://<id>/"：本机实测仍会回 untrusted-sender，
+ *      说明某些环境里扩展页消息的 `sender.url` 不可靠（为空 / 不是该形状）。
+ *      与其猜浏览器行为，不如用唯一可靠的字段：`sender.id`。
  */
 function trustedSender(sender) {
-	if (!sender) return false;
-	if (sender.id !== chrome.runtime.id) return false;
+	return !!sender && sender.id === chrome.runtime.id;
+}
+
+/** 被拒时把发送者特征回给调用方，便于排查（不含敏感信息，只描述形状）。 */
+function senderHint(sender) {
+	if (!sender) return "sender=null";
 	const url = typeof sender.url === "string" ? sender.url : "";
-	if (url.startsWith(`chrome-extension://${chrome.runtime.id}/`)) return true;
-	// 极少见：没有 url 的扩展内部调用（无 tab 时）也放行；带 tab 但没有扩展 URL 的一律拒
-	return url === "" && sender.tab === undefined;
+	return `id=${sender.id || "-"} url=${url || "-"} tab=${sender.tab ? "yes" : "no"}`;
 }
 
 /**
@@ -153,7 +159,7 @@ async function proxyFetch(msg) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	if (!trustedSender(sender)) {
-		sendResponse({ ok: false, error: "untrusted-sender" });
+		sendResponse({ ok: false, error: "untrusted-sender", hint: senderHint(sender) });
 		return false;
 	}
 	// 「发送测试通知」：设置页按钮 → 这里生成 DSH 同款文案并弹一条，用完即弃（不读写去重状态）

@@ -48,7 +48,8 @@ src/storage.js         core 需要的 storage：chrome.storage.local 封装
 src/view-helpers.js    展示层纯函数（倒计时/角色名精简/悬停文案/行渲染模型）
 src/entry-meta.js      来源显示名口径（与 core 的 getDefaultSourceName 逐支对齐）
 src/ics.js             日历导出（RFC 5545 纯函数：转义 / 75-octet 折行 / UID / 生成）
-src/remind.js          到期提醒纯函数（照 DSH 移植：档位解析 / 折叠去重 / 通知文案 / 测试通知）
+src/remind.js          到期提醒纯函数
+dist/build-info.js     构建标记（每次 build 生成，设置页「关于」显示，用于确认加载的是不是最新构建）（照 DSH 移植：档位解析 / 折叠去重 / 通知文案 / 测试通知）
 src/visibility.js      展示/隐藏判定与写回
 src/popup.*            面板
 src/options.*          设置页
