@@ -17,6 +17,7 @@
 | `storage` | `2-权限理由-storage.txt` |
 | Host permissions / 主机权限（或按域名分组的那一栏） | `3-权限理由-主机权限.txt` 的**【主机权限】**那一段 |
 | `declarativeNetRequestWithHostAccess` | `3-权限理由-主机权限.txt` 的**【声明式网络请求权限】**那一段 |
+| `alarms` | `2b-权限理由-alarms.txt` |
 
 > ⚠️ `3-权限理由-主机权限.txt` / `3-permission-host-EN.txt` 现在是**两段合一**：
 > 前半段解释 host_permissions（49 条，含 1 条 `*.gamekee.com` 子域通配的原因），

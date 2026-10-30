@@ -178,6 +178,90 @@ chrome.runtime.onInstalled.addListener(syncActionPopup);
 chrome.runtime.onStartup.addListener(syncActionPopup);
 chrome.storage.onChanged.addListener((changes, area) => {
 	if (area === "local" && changes.newPanel) syncActionPopup();
+	if (area === "local" && (changes.lastData || changes.badge)) updateBadge();
 });
 // 仅在 popup 被置空时触发（即新面板开启时）
 syncActionPopup();
+
+// —— 到期角标 ——
+//
+// 在工具栏图标上显示「3 天内到期的条目数」。**只读本地缓存**（lastData），不联网、不请求新数据。
+//
+// 为什么放在 background：角标要能**定时刷新**。MV3 的 service worker 会被休眠，
+// 用 chrome.alarms 每 30 分钟唤醒一次重算（alarms 是唯一能在 SW 休眠后唤醒它的机制）。
+//
+// ⚠️ 能力边界（不要对用户承诺做不到的事）：
+//   · 浏览器**没开**时不会有任何更新 —— 扩展没有常驻进程；
+//   · 扩展**不能**让浏览器开机自启；`chrome.runtime.onStartup` 只在浏览器启动时触发；
+//   · 浏览器窗口关闭后是否继续跑，取决于用户自己的「关闭后继续运行后台应用」设置。
+//
+// 数据口径：lastData 是 JSON 字符串，形如 `{ [游戏id]: { bannerDates, eventDates, … } }`，
+// 其中 bannerDates/eventDates 是**本机时区换算后的**「MM-DD HH:MM ~ MM-DD HH:MM」外显文本，
+// 所以这里按本机时区解析，和面板显示一致。
+const BADGE_ALARM = "gacha-calendar-badge";
+const BADGE_DAYS = 3;
+
+/** 解析「MM-DD HH:MM ~ MM-DD HH:MM」→ { startTs, endTs }；失败返回 null。 */
+function parseBadgeRange(str, nowMs) {
+	if (typeof str !== "string") return null;
+	const parts = str.split(/~/).map((x) => x.trim());
+	if (parts.length < 2) return null;
+	const parsePart = (p) => {
+		const m = p.match(/^(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?$/);
+		if (!m) return null;
+		const mo = Number(m[1]);
+		const d = Number(m[2]);
+		if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+		const h = m[3] ? Number(m[3]) : 0;
+		const mi = m[4] ? Number(m[4]) : 0;
+		const base = new Date(new Date(nowMs).getFullYear(), mo - 1, d, h, mi).getTime();
+		return { mo, base };
+	};
+	const a = parsePart(parts[0]);
+	const b = parsePart(parts[1]);
+	if (!a || !b) return null;
+	let endTs = b.base;
+	if (b.mo < a.mo) endTs += 365 * 24 * 60 * 60 * 1000; // 跨年
+	return { startTs: a.base, endTs };
+}
+
+async function updateBadge() {
+	try {
+		const { lastData, badge } = await chrome.storage.local.get(["lastData", "badge"]);
+		// 默认开启；只有显式存了 false 才不显示
+		if (badge === false) {
+			await chrome.action.setBadgeText({ text: "" });
+			return;
+		}
+		const now = Date.now();
+		const limit = now + BADGE_DAYS * 24 * 60 * 60 * 1000;
+		let count = 0;
+		let map = {};
+		try {
+			map = lastData ? JSON.parse(lastData) : {};
+		} catch {
+			map = {};
+		}
+		for (const rec of Object.values(map || {})) {
+			if (!rec || typeof rec !== "object") continue;
+			for (const field of ["bannerDates", "eventDates"]) {
+				const r = parseBadgeRange(rec[field], now);
+				// 只数"还没结束、且 3 天内到期"的
+				if (r && r.endTs > now && r.endTs <= limit) count++;
+			}
+		}
+		await chrome.action.setBadgeBackgroundColor({ color: "#E0A93B" });
+		await chrome.action.setBadgeText({ text: count > 0 ? (count > 9 ? "9+" : String(count)) : "" });
+	} catch {
+		/* 角标失败不影响任何主流程 */
+	}
+}
+
+chrome.alarms.create(BADGE_ALARM, { periodInMinutes: 30 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+	if (alarm && alarm.name === BADGE_ALARM) updateBadge();
+});
+chrome.runtime.onInstalled.addListener(updateBadge);
+chrome.runtime.onStartup.addListener(updateBadge);
+// SW 每次被唤醒（例如用户点图标）也顺手算一次，避免等满 30 分钟
+updateBadge();

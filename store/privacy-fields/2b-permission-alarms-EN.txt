@@ -1,0 +1,13 @@
+alarms
+
+Used only to **refresh the toolbar badge periodically**: every 30 minutes it wakes the extension's
+background worker, counts the locally cached items ending within the next 3 days, and writes that
+number onto the toolbar icon badge.
+
+Key points:
+1) No network access: alarms is just a timer and issues no requests; the badge number comes from the
+   local chrome.storage.local cache.
+2) No page access: the extension has no content script and injects nothing into any page.
+3) User can turn it off: unchecking "提醒与导出 -> 到期角标" in the settings page clears the badge and
+   stops the calculation immediately.
+4) It is not a sensitive permission and triggers no install warning.

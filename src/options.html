@@ -31,6 +31,26 @@
 			</section>
 
 			<section class="card">
+				<h2>提醒与导出</h2>
+				<div class="row">
+					<label class="lbl" for="badge">到期角标</label>
+					<input id="badge" type="checkbox" />
+					<span class="hint">
+						在工具栏图标上显示 <strong>3 天内到期</strong>的条目数。
+						只在浏览器运行期间更新（扩展没有常驻进程，浏览器关闭后不会提醒）。
+					</span>
+				</div>
+				<div class="row">
+					<label class="lbl">导出日历</label>
+					<button id="exportIcs" class="btn" type="button">导出 .ics</button>
+					<span class="hint">
+						把当前在期（及尚未结束）的卡池与活动导出成日历文件，可导入手机 / 电脑日历。
+						时间为本机时区。
+					</span>
+				</div>
+			</section>
+
+			<section class="card">
 				<h2>实验特性</h2>
 				<div class="row">
 					<label class="lbl" for="newPanel">新日程面板</label>

@@ -12,6 +12,8 @@ import { createEngine } from "gacha-calendar-core";
 import { createStorage, readKeys, writeKeys } from "./storage.js";
 import { gameColor, isHexColor } from "./game-color.js";
 import { sourceTable } from "./entry-meta.js";
+import { buildIcs, icsFileName, fnv1a } from "./ics.js";
+import { parseDisplayRange } from "./view-helpers.js";
 import { transport } from "./transport.js";
 import { createVisibility, toggleVisibility } from "./visibility.js";
 // 默认来源显示名与 core 的 getDefaultSourceName 同口径（含「未配置」文案）
@@ -37,6 +39,8 @@ const el = {
 	autoRefresh: document.getElementById("autoRefresh"),
 	newPanel: document.getElementById("newPanel"),
 	panelTop: document.getElementById("panelTop"),
+	badge: document.getElementById("badge"),
+	exportIcs: document.getElementById("exportIcs"),
 	refreshMinutes: document.getElementById("refreshMinutes"),
 	resetOrder: document.getElementById("resetOrder"),
 	removedCard: document.getElementById("removed-card"),
@@ -65,7 +69,9 @@ let cfg = {
 	newPanel: true,
 	// 新面板顶部区域二选一："recent" 近期列表 / "slot" 近期卡片
 	// 默认「近期卡片」（= slot）
-	panelTop: "slot"
+	panelTop: "slot",
+	// 到期角标（工具栏图标上显示 3 天内到期数）；默认开
+	badge: true
 };
 /** 生效中的条目（core 已按 removed 过滤）元信息。 */
 let allGames = [];
@@ -194,6 +200,7 @@ function render() {
 	el.autoRefresh.checked = cfg.autoRefresh !== false;
 	if (el.newPanel) el.newPanel.checked = cfg.newPanel !== false;
 	if (el.panelTop) el.panelTop.value = cfg.panelTop === "recent" ? "recent" : "slot";
+	if (el.badge) el.badge.checked = cfg.badge !== false;
 	syncPanelTopEnabled();
 	renderRefreshOptions();
 
@@ -528,12 +535,78 @@ async function runSelfCheck() {
 	}
 }
 
+/**
+ * 导出「当前在期 / 尚未结束」的卡池与活动为 .ics 快照。
+ *
+ * 数据来源与面板完全一致：engine.getCached() + parseDisplayRange（本机时区外显文本）。
+ * 已结束的条目不导出；没日期的（例如刚抓取失败/未公布）跳过。
+ * 下载走 Blob + <a download>，因此**不需要 downloads 权限**。
+ */
+async function exportCalendar() {
+	const now = new Date();
+	const nowTs = now.getTime();
+	const cached = await engine.getCached();
+	const vis = createVisibility(engine, cfg);
+	const table = sourceTable(engine);
+	const events = [];
+	for (const g of orderedGames()) {
+		if (vis.isHidden(g.id)) continue;
+		const rec = cached.games[g.id];
+		if (!rec) continue;
+		const sides = [
+			["gacha", "卡池", rec.banner, rec.bannerDates, rec.roles],
+			["event", "活动", rec.event, rec.eventDates, ""]
+		];
+		for (const [side, label, title, dates, roles] of sides) {
+			const name = String(title || "").trim();
+			if (!name) continue;
+			const range = parseDisplayRange(dates, now);
+			if (!range || !(range.endTs > nowTs)) continue; // 已结束的不导出
+			const meta = table.get(g.id) || {};
+			const desc = [
+				"档期：" + String(dates || "").trim(),
+				roles ? "UP：" + String(roles).trim() : "",
+				typeof meta.url === "string" ? meta.url : ""
+			]
+				.filter(Boolean)
+				.join("\n");
+			events.push({
+				uid: fnv1a(g.id + "|" + side + "|" + range.startTs) + "@gacha-calendar-extension",
+				startTs: range.startTs,
+				endTs: range.endTs,
+				summary: g.name + " · " + label + "：" + name,
+				description: desc
+			});
+		}
+	}
+	const label = "导出 .ics";
+	if (!events.length) {
+		el.exportIcs.textContent = "没有可导出的条目";
+		setTimeout(() => { el.exportIcs.textContent = label; }, 2500);
+		return;
+	}
+	const ics = buildIcs(events, nowTs);
+	const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = icsFileName(nowTs);
+	document.body.appendChild(a);
+	a.click();
+	a.remove();
+	setTimeout(() => URL.revokeObjectURL(url), 5000);
+	el.exportIcs.textContent = "已导出 " + events.length + " 条";
+	setTimeout(() => { el.exportIcs.textContent = label; }, 2500);
+}
+
 // —— 入口 ——
 
 el.autoRefresh.addEventListener("change", () => commit({ autoRefresh: el.autoRefresh.checked }));
 // 实验特性：切换后由 background 同步工具栏行为（开启=直接打开日程页面，关闭=弹 popup）
 if (el.newPanel) el.newPanel.addEventListener("change", () => { commit({ newPanel: el.newPanel.checked }); syncPanelTopEnabled(); });
 if (el.panelTop) el.panelTop.addEventListener("change", () => commit({ panelTop: el.panelTop.value === "slot" ? "slot" : "recent" }));
+if (el.badge) el.badge.addEventListener("change", () => commit({ badge: el.badge.checked }));
+if (el.exportIcs) el.exportIcs.addEventListener("click", () => exportCalendar());
 el.refreshMinutes.addEventListener("change", () => commit({ refreshMinutes: Number(el.refreshMinutes.value) }));
 el.resetOrder.addEventListener("click", () => commit({ order: null }));
 el.selfCheck.addEventListener("click", () => runSelfCheck());
@@ -574,7 +647,8 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 			"refreshMinutes",
 			"newPanel",
 			"panelTop",
-			"gameColors"
+			"gameColors",
+			"badge"
 		])
 	]);
 	allGames = games;
@@ -594,7 +668,8 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		newPanel: stored.newPanel !== false,
 		panelTop: stored.panelTop === "recent" ? "recent" : "slot",
 		// 落盘是 JSON 字符串；这里解析回对象（{ 游戏id: "#rrggbb" }）
-		gameColors: parseJson(stored.gameColors, {})
+		gameColors: parseJson(stored.gameColors, {}),
+		badge: stored.badge !== false
 	};
 	render();
 })().catch((err) => {
