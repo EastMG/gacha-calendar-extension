@@ -82,6 +82,15 @@ check(
 	mf.content_scripts === undefined && mf.web_accessible_resources === undefined
 );
 
+// background（原样复制的 ESM service worker）里每个相对 import 都必须真的在 dist 里 ——
+// 少一个文件时浏览器只会"扩展加载失败、没有 SW"，报错极难定位（build 也不报）。
+{
+	const bg = fs.readFileSync(path.join(DIST, "background.js"), "utf8");
+	const rels = [...bg.matchAll(/from\s+"(\.\/[^"]+)"/g)].map((m) => m[1]);
+	const missing = rels.filter((rel) => !fs.existsSync(path.join(DIST, rel.replace(/^\.\//, ""))));
+	check("background 的 import 都能在 dist 找到", missing.length === 0, missing.join(", ") || (rels.length ? rels.join(", ") : "（无相对 import）"));
+}
+
 console.log("\n=== 2. 版本一致性 ===");
 const pkg = readJson(path.join(ROOT, "package.json"));
 check("package.json 与 manifest 版本一致", pkg.version === mf.version, `${pkg.version} / ${mf.version}`);

@@ -42,13 +42,19 @@ node build.mjs --zip
 ```
 manifest.json          MV3 清单（权限最小化：只申请 storage + 精确域名）
 src/_locales/          i18n 消息（zh_CN / en）——**商店据此识别可用语言，不能删**
-src/background.js      service worker：白名单代发跨域请求（唯一的"代理"）+ 到期角标 + 到期通知（alarms）
+src/background.js      service worker：消息分发（proxyFetch / 测试通知 / 诊断）+ 角标 + 通知调度
 src/transport.js       core 需要的 transport：直连 + 经 background 代发
 src/storage.js         core 需要的 storage：chrome.storage.local 封装
 src/view-helpers.js    展示层纯函数（倒计时/角色名精简/悬停文案/行渲染模型）
 src/entry-meta.js      来源显示名口径（与 core 的 getDefaultSourceName 逐支对齐）
 src/ics.js             日历导出（RFC 5545 纯函数：转义 / 75-octet 折行 / UID / 生成）
 （设置键）refreshMode  "startup"（默认，浏览器启动后首次打开抓一轮）/ "interval"（按 refreshMinutes 间隔）
+src/proxy.js           跨域代发白名单 + proxyFetch（SW 与后台抓取共用）
+src/refresh-worker.js  后台抓取 worker（内联 core；启动即抓 / 间隔抓 / 提醒前补抓）
+  · refresh-worker 的边界：SW 会在空闲时被回收；抓取期间有网络活动不会被回收。
+    万一被回收，core 在**最后一刻**才写 lastData/lastRefresh，下一轮闹钟会补抓，不会写半份数据。
+  · refresh-worker 由 background.js `import`，所以它必须打成 **ESM**（bundleEsm），
+    不能用页面那套 IIFE 打包（否则 SW 起不来、扩展加载失败）。
 src/remind.js          到期提醒纯函数
 dist/build-info.js     构建标记（每次 build 生成，设置页「关于」显示，用于确认加载的是不是最新构建）（照 DSH 移植：档位解析 / 折叠去重 / 通知文案 / 测试通知）
 src/visibility.js      展示/隐藏判定与写回
@@ -130,7 +136,7 @@ transport = {
 
 ### 3. 安全红线与来源域名守卫
 
-- `src/background.js` 的 `ALLOW_HOSTS` **必须保留**：没有它就是"任意内网地址请求器"（SSRF）
+- `src/proxy.js` 的 `ALLOW_HOSTS` **必须保留**（background SW 与 refresh-worker 共用）：没有它就是"任意内网地址请求器"（SSRF）
 - 消息来源做校验（只接受本扩展自己的页面），否则任何网页都能驱使扩展发请求
 - `manifest.host_permissions` 不申请 `<all_urls>`：既是商店审核要求，也让权限提示可接受
 

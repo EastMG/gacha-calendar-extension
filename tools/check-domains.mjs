@@ -96,10 +96,15 @@ export function readManifestHosts() {
 }
 
 export function readAllowHosts() {
-	const src = fs.readFileSync(BACKGROUND, "utf8");
-	const block = src.match(/const ALLOW_HOSTS = \[([\s\S]*?)\];/);
-	if (!block) throw new Error("无法从 src/background.js 解析 ALLOW_HOSTS");
-	return new Set([...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]));
+	// 白名单在 src/proxy.js（background SW 与后台刷新 worker 共用同一份）；
+	// 老版本放在 background.js 里，这里保留回退，避免历史检出跑不动。
+	const candidates = [path.join(ROOT, "src", "proxy.js"), BACKGROUND].filter((p) => fs.existsSync(p));
+	for (const file of candidates) {
+		const src = fs.readFileSync(file, "utf8");
+		const block = src.match(/const ALLOW_HOSTS = \[([\s\S]*?)\];/);
+		if (block) return new Set([...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]));
+	}
+	throw new Error("无法从 src/proxy.js（或 background.js）解析 ALLOW_HOSTS");
 }
 
 /**

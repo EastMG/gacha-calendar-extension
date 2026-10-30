@@ -20,6 +20,10 @@ function makeLab(tag, coreText) {
 	fs.copyFileSync(path.join(REAL, "tools", "check-domains.mjs"), path.join(dir, "tools", "check-domains.mjs"));
 	fs.copyFileSync(path.join(REAL, "manifest.json"), path.join(dir, "manifest.json"));
 	fs.copyFileSync(path.join(REAL, "src", "background.js"), path.join(dir, "src", "background.js"));
+	// 白名单已抽到 src/proxy.js（background 与后台抓取共用）；夹具里也要带上，否则解析不到 ALLOW_HOSTS
+	if (fs.existsSync(path.join(REAL, "src", "proxy.js"))) {
+		fs.copyFileSync(path.join(REAL, "src", "proxy.js"), path.join(dir, "src", "proxy.js"));
+	}
 	fs.writeFileSync(
 		path.join(dir, "node_modules", "gacha-calendar-core", "package.json"),
 		JSON.stringify({ name: "gacha-calendar-core", version: "0.0.0-test", main: "./core.mjs" }, null, 2)

@@ -61,6 +61,8 @@ manifest.version = pkg.version;
 const STATIC = [
 	// background service worker 直接 import 它（不经过打包），所以必须原样复制
 	["src/remind.js", "remind.js"],
+	// background.js 直接 import 它（原样复制的 SW 依赖这份文件）
+	["src/proxy.js", "proxy.js"],
 	["src/popup.html", "popup.html"],
 	["src/popup.css", "popup.css"],
 	["src/options.html", "options.html"],
@@ -136,6 +138,33 @@ function bundle(entry, outfile) {
 			"--legal-comments=none",
 			// React 的入口靠这个环境变量在 开发版/生产版 之间二选一；
 			// 不定义的话 esbuild 会保留两条分支、运行时落到**开发版**（体积大 5 倍且带调试告警）。
+			'--define:process.env.NODE_ENV="production"',
+			"--log-level=warning",
+			`--outfile=${outfile}`
+		],
+		{ cwd: ROOT, stdio: "inherit" }
+	);
+}
+
+/**
+ * 与 bundle() 相同，但产出 **ESM**（有 export）。
+ *
+ * 为什么需要第二个：bundle() 用 `--format=iife`，产物是"自执行脚本、没有 export"。
+ * popup/options/panel 都是页面里 `<script type="module">` 直接加载的，IIFE 没问题；
+ * 但 refresh-worker.js 要被 **background.js（type: module 的 service worker）import** ——
+ * 拿 IIFE 去 import 会得到"没有导出、也没有副作用"的模块，SW 直接起不来
+ * （2026-10-30 真机踩到：扩展加载后完全找不到 service_worker target）。
+ */
+function bundleEsm(entry, outfile) {
+	execFileSync(
+		esbuildBin(),
+		[
+			path.join(SRC, entry),
+			"--bundle",
+			"--format=esm",
+			"--target=chrome102",
+			"--platform=browser",
+			"--legal-comments=none",
 			'--define:process.env.NODE_ENV="production"',
 			"--log-level=warning",
 			`--outfile=${outfile}`
@@ -260,6 +289,8 @@ ensureDir(DIST);
 			console.log(`  已移除历史验证产物 ${stale}`);
 		}
 	}
+	// 后台抓取 worker：内联 core，让 service worker 也能真抓（启动即抓 / 间隔抓）
+	bundleEsm("refresh-worker.js", path.join(DIST, "refresh-worker.js"));
 	bundle("popup.js", path.join(DIST, "popup.js"));
 	bundle("options.js", path.join(DIST, "options.js"));
 	// 新日程面板：单独成包（内含 React 与一比一移植的 ScheduleView）

@@ -202,18 +202,9 @@ async function doRefresh() {
 /** 打开 popup 时按设置的频率判断是否需要自动抓一轮（避免每次点开都联网）。 */
 async function autoRefreshIfDue() {
 	if (!state.autoRefresh) return;
-	// 刷新时机 = 浏览器启动时：看 background 在本会话开始时打的标记，抓一轮后清掉
+	// 「浏览器启动时」由后台 refresh-worker 真抓（不依赖面板打开）；这里只兜底"完全没有缓存"
 	if (state.refreshMode === "startup") {
-		let pending = false;
-		try {
-			const s = await chrome.storage.session.get("pendingStartRefresh");
-			pending = !!s.pendingStartRefresh;
-			if (pending) await chrome.storage.session.set({ pendingStartRefresh: false });
-		} catch {
-			// 没有 storage.session（老浏览器）：退化成"本次打开还没有数据就抓"
-			pending = !state.refreshedAt;
-		}
-		if (pending || !state.refreshedAt) await doRefresh();
+		if (!state.refreshedAt) await doRefresh();
 		return;
 	}
 	const intervalMs = Math.max(1, state.refreshMinutes) * 60 * 1000;
