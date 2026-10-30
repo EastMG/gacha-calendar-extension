@@ -41,6 +41,14 @@
 					</span>
 				</div>
 				<div class="row">
+					<label class="lbl" for="notify">系统通知</label>
+					<input id="notify" type="checkbox" />
+					<span class="hint">
+						在条目到期前 <strong>3 小时</strong>与 <strong>24 小时</strong>各弹一次系统通知（按条目去重）。
+						只在浏览器运行期间生效；若开了 Edge 的「随系统启动 + 关闭后继续运行后台扩展」，开机后也能提醒。
+					</span>
+				</div>
+				<div class="row">
 					<label class="lbl">导出日历</label>
 					<button id="exportIcs" class="btn" type="button">导出 .ics</button>
 					<span class="hint">

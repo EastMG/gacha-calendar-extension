@@ -1,0 +1,13 @@
+notifications
+
+Used only for **deadline reminders**: when a banner or event is about to end (once at 3 hours before and
+once at 24 hours before), the extension shows a system notification saying which game/item is ending and
+how many hours are left.
+
+Key points:
+1) **Off by default**: nothing is shown after install; it only works after the user explicitly ticks
+   "提醒与导出 -> 系统通知" in the settings page, and unchecking it stops it completely (dedupe state cleared).
+2) No network access: notification text comes entirely from the local cache (lastData in
+   chrome.storage.local); no requests are made.
+3) No page access: the extension has no content script.
+4) Rate-limited: each item notifies once per lead time (deduped by item + date range + lead), so it never spams.

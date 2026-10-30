@@ -40,6 +40,7 @@ const el = {
 	newPanel: document.getElementById("newPanel"),
 	panelTop: document.getElementById("panelTop"),
 	badge: document.getElementById("badge"),
+	notify: document.getElementById("notify"),
 	exportIcs: document.getElementById("exportIcs"),
 	refreshMinutes: document.getElementById("refreshMinutes"),
 	resetOrder: document.getElementById("resetOrder"),
@@ -71,7 +72,9 @@ let cfg = {
 	// 默认「近期卡片」（= slot）
 	panelTop: "slot",
 	// 到期角标（工具栏图标上显示 3 天内到期数）；默认开
-	badge: true
+	badge: true,
+	// 系统通知：默认**关闭**（notifications 权限已声明，但用户显式开启后才弹）
+	notify: false
 };
 /** 生效中的条目（core 已按 removed 过滤）元信息。 */
 let allGames = [];
@@ -201,6 +204,7 @@ function render() {
 	if (el.newPanel) el.newPanel.checked = cfg.newPanel !== false;
 	if (el.panelTop) el.panelTop.value = cfg.panelTop === "recent" ? "recent" : "slot";
 	if (el.badge) el.badge.checked = cfg.badge !== false;
+	if (el.notify) el.notify.checked = cfg.notify === true;
 	syncPanelTopEnabled();
 	renderRefreshOptions();
 
@@ -606,6 +610,7 @@ el.autoRefresh.addEventListener("change", () => commit({ autoRefresh: el.autoRef
 if (el.newPanel) el.newPanel.addEventListener("change", () => { commit({ newPanel: el.newPanel.checked }); syncPanelTopEnabled(); });
 if (el.panelTop) el.panelTop.addEventListener("change", () => commit({ panelTop: el.panelTop.value === "slot" ? "slot" : "recent" }));
 if (el.badge) el.badge.addEventListener("change", () => commit({ badge: el.badge.checked }));
+if (el.notify) el.notify.addEventListener("change", () => commit({ notify: el.notify.checked }));
 if (el.exportIcs) el.exportIcs.addEventListener("click", () => exportCalendar());
 el.refreshMinutes.addEventListener("change", () => commit({ refreshMinutes: Number(el.refreshMinutes.value) }));
 el.resetOrder.addEventListener("click", () => commit({ order: null }));
@@ -648,7 +653,8 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 			"newPanel",
 			"panelTop",
 			"gameColors",
-			"badge"
+			"badge",
+			"notify"
 		])
 	]);
 	allGames = games;
@@ -669,7 +675,8 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		panelTop: stored.panelTop === "recent" ? "recent" : "slot",
 		// 落盘是 JSON 字符串；这里解析回对象（{ 游戏id: "#rrggbb" }）
 		gameColors: parseJson(stored.gameColors, {}),
-		badge: stored.badge !== false
+		badge: stored.badge !== false,
+		notify: stored.notify === true
 	};
 	render();
 })().catch((err) => {

@@ -179,6 +179,8 @@ chrome.runtime.onStartup.addListener(syncActionPopup);
 chrome.storage.onChanged.addListener((changes, area) => {
 	if (area === "local" && changes.newPanel) syncActionPopup();
 	if (area === "local" && (changes.lastData || changes.badge)) updateBadge();
+	// 新数据到位 / 用户刚打开开关时，立刻按最新数据判一轮（不等 30 分钟）
+	if (area === "local" && (changes.lastData || changes.notify)) checkReminders();
 });
 // 仅在 popup 被置空时触发（即新面板开启时）
 syncActionPopup();
@@ -257,11 +259,108 @@ async function updateBadge() {
 	}
 }
 
+// —— 到期通知 ——
+//
+// 与角标同一份数据、同一个闹钟（每 30 分钟）。**默认关闭**，设置页「提醒与导出 → 系统通知」才开启：
+// notifications 权限在安装时就已声明，但只有用户显式开启后才会真的弹通知（避免装完就打扰）。
+//
+// 提醒档位：到期前 **3 小时** 与 **24 小时** 各一次（按条目 + 档期去重，不重复轰炸）。
+// 去重记录存 `notified`（`{ key: 通知时间 }`），只保留 30 天内、且档期未结束的条目，避免无限增长。
+//
+// ⚠️ 同样受浏览器生命周期限制：浏览器没运行（含后台进程被关掉）时不会提醒。
+//    用户若开了 Edge 的「随系统启动 + 关闭后继续运行后台扩展」，覆盖时间就很完整。
+const NOTIFY_LEADS_MIN = [180, 24 * 60]; // 3 小时 / 24 小时（升序：取"最接近的最小档"）
+const NOTIFIED_KEY = "notified";
+
+/** 剩余时间的人话文案：`X 天 X 小时` / `X 小时 X 分钟` / `X 分钟`。 */
+function fmtLeft(ms) {
+	const diff = Math.max(0, Number(ms) || 0);
+	const d = Math.floor(diff / 864e5);
+	const h = Math.floor((diff % 864e5) / 36e5);
+	const mi = Math.floor((diff % 36e5) / 6e4);
+	if (d > 0) return `${d} 天 ${h} 小时`;
+	if (h > 0) return `${h} 小时 ${mi} 分钟`;
+	return `${mi} 分钟`;
+}
+
+async function checkReminders() {
+	try {
+		const store = await chrome.storage.local.get(["lastData", "notify", NOTIFIED_KEY]);
+		// 默认关闭：只有显式存了 true 才提醒
+		if (store.notify !== true) return;
+		let map = {};
+		try {
+			map = store.lastData ? JSON.parse(store.lastData) : {};
+		} catch {
+			map = {};
+		}
+		const seen = store[NOTIFIED_KEY] && typeof store[NOTIFIED_KEY] === "object" ? store[NOTIFIED_KEY] : {};
+		const now = Date.now();
+		const next = {};
+		for (const [id, rec] of Object.entries(map || {})) {
+			if (!rec || typeof rec !== "object") continue;
+			const sides = [
+				["gacha", "bannerDates", "banner", "卡池"],
+				["event", "eventDates", "event", "活动"]
+			];
+			for (const [side, field, titleField, label] of sides) {
+				const r = parseBadgeRange(rec[field], now);
+				if (!r || r.endTs <= now) continue;
+				const left = r.endTs - now;
+				// 升序取第一个满足的档：剩 2 小时 → 走 3 小时档（24 小时档在 20 小时时已经发过）
+				const lead = NOTIFY_LEADS_MIN.find((m) => left <= m * 60000);
+				if (!lead) continue;
+				const key = `${id}|${side}|${r.endTs}|${lead}`;
+				if (seen[key]) {
+					next[key] = seen[key];
+					continue;
+				}
+				const name = String(rec[titleField] || "").trim() || "（未命名）";
+				try {
+					await chrome.notifications.create(`gc:${key}`, {
+						type: "basic",
+						iconUrl: "icons/icon-128.png",
+						title: `二游日历 · ${label} ${fmtLeft(left)}后结束`,
+						message: name,
+						priority: 1
+					});
+				} catch {
+					/* 通知失败不影响角标 */
+				}
+				next[key] = now;
+			}
+		}
+		// 清理：只保留"档期未结束且 30 天内通知过"的键
+		const cutoff = now - 30 * 864e5;
+		for (const [k, ts] of Object.entries(seen)) {
+			const endTs = Number(String(k).split("|")[2]) || 0;
+			if (endTs > now && ts > cutoff) next[k] = ts;
+		}
+		await chrome.storage.local.set({ [NOTIFIED_KEY]: next });
+	} catch {
+		/* 提醒失败不影响任何主流程 */
+	}
+}
+
+chrome.notifications.onClicked.addListener((nid) => {
+	chrome.notifications.clear(nid);
+});
+
 chrome.alarms.create(BADGE_ALARM, { periodInMinutes: 30 });
 chrome.alarms.onAlarm.addListener((alarm) => {
-	if (alarm && alarm.name === BADGE_ALARM) updateBadge();
+	if (alarm && alarm.name === BADGE_ALARM) {
+		updateBadge();
+		checkReminders();
+	}
 });
-chrome.runtime.onInstalled.addListener(updateBadge);
-chrome.runtime.onStartup.addListener(updateBadge);
+chrome.runtime.onInstalled.addListener(() => {
+	updateBadge();
+	checkReminders();
+});
+chrome.runtime.onStartup.addListener(() => {
+	updateBadge();
+	checkReminders();
+});
 // SW 每次被唤醒（例如用户点图标）也顺手算一次，避免等满 30 分钟
 updateBadge();
+checkReminders();

@@ -63,7 +63,8 @@ check("background.type === module", !mf.background || mf.background.type === "mo
 // 后者是给 GameKee CDN 注入 Referer 用的（Chrome 的 fetch 不能设 Referer）——
 // 它只对已授权的 host 生效，不含"拦截全站请求"的 declarativeNetRequest 权限。
 // alarms：到期角标每 30 分钟刷新需要（无安装警告、不联网、只读本地缓存）
-const ALLOWED_PERMS = ["storage", "declarativeNetRequestWithHostAccess", "alarms"];
+// notifications：到期提醒（默认关闭，用户开启后才弹）
+const ALLOWED_PERMS = ["storage", "declarativeNetRequestWithHostAccess", "alarms", "notifications"];
 const extraPerms = (mf.permissions || []).filter((p) => !ALLOWED_PERMS.includes(p));
 check(
 	"permissions 只有 storage（+ 注入 Referer 用的 declarativeNetRequestWithHostAccess）",

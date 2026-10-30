@@ -151,6 +151,10 @@ const fields = [
 	"2-permission-storage-EN.txt",
 	"3-权限理由-主机权限.txt",
 	"3-permission-host-EN.txt",
+	"2b-权限理由-alarms.txt",
+	"2b-permission-alarms-EN.txt",
+	"2c-权限理由-notifications.txt",
+	"2c-permission-notifications-EN.txt",
 	"4-隐私政策URL.txt",
 	"5-认证说明.txt",
 	"5-certification-notes-EN.txt"
@@ -158,6 +162,18 @@ const fields = [
 for (const f of fields) {
 	const p = path.join(ROOT, "store", "privacy-fields", f);
 	check(`审核字段 ${f}`, fs.existsSync(p) && fs.readFileSync(p, "utf8").trim().length > 0);
+}
+
+// manifest 里每个权限都要有对应的理由文件：新增权限时**逼**自己补材料，避免送审才发现漏填
+const permJustification = {
+	storage: "2-权限理由-storage.txt",
+	alarms: "2b-权限理由-alarms.txt",
+	notifications: "2c-权限理由-notifications.txt"
+};
+for (const perm of mf.permissions || []) {
+	if (perm === "declarativeNetRequestWithHostAccess") continue; // 写在 3-权限理由-主机权限.txt 的【声明式网络请求权限】段
+	const rel = permJustification[perm];
+	check(`权限 ${perm} 有理由文件`, !!rel && fs.existsSync(path.join(ROOT, "store", "privacy-fields", rel)));
 }
 
 console.log("");
