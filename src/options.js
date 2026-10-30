@@ -51,8 +51,6 @@ const el = {
 	exportIcs: document.getElementById("exportIcs"),
 	refreshMinutes: document.getElementById("refreshMinutes"),
 	resetOrder: document.getElementById("resetOrder"),
-	remindAll: document.getElementById("remindAll"),
-	remindEmpty: document.getElementById("remind-empty"),
 	removedCard: document.getElementById("removed-card"),
 	removedList: document.getElementById("removed-list"),
 	selfCheck: document.getElementById("selfCheck"),
@@ -244,8 +242,6 @@ function renderRefreshOptions() {
 		})
 	);
 	el.refreshMinutes.value = cfg.refreshMode === "interval" ? String(current) : REFRESH_STARTUP.value;
-	// 白名单空 = 一条通知都不会发 ⇒ 显式警告（DSH 同款）
-	if (el.remindEmpty) el.remindEmpty.hidden = remindIds().length !== 0;
 }
 
 /** 出厂提醒白名单（core 的 DEFAULT_SETTINGS.remindGames）；取不到就空数组。 */
@@ -714,12 +710,6 @@ el.refreshMinutes.addEventListener("change", () => {
 		else commit({ refreshMode: "interval", refreshMinutes: Number(v) || 24 * 60 });
 	});
 el.resetOrder.addEventListener("click", () => commit({ order: null }));
-// 「全部提醒」= 把当前**展示中**的条目写进白名单（与 DSH 一致）
-if (el.remindAll) el.remindAll.addEventListener("click", () => {
-	const visNow = createVisibility(engine, cfg);
-	const ids = orderedGames().filter((g) => visNow.isChecked(g.id)).map((g) => String(g.id));
-	commit({ remindGames: ids });
-});
 el.selfCheck.addEventListener("click", () => runSelfCheck());
 
 (async () => {
