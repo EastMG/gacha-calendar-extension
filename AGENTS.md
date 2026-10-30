@@ -36,3 +36,14 @@
 - 抓取域名一律来自 `gacha-calendar-core`；改 core 版本后先跑 `node tools/check-domains.mjs`。
 - `manifest.json` 的 `host_permissions` 必须覆盖 core 实际抓取的全部域名（含动态 CDN 子域）。
 - `src/background.js` 的 `ALLOW_HOSTS` 不能删（删了就是任意内网请求器）。
+
+## 4. Partner Center 自动化：别把重定向当掉登录
+
+微软账号的授权页（`login.microsoftonline.com`）在**已登录**状态下也会作为重定向的一站出现：
+导航后立刻读页面会看到登录页，若据此判定"会话过期、需要用户登录"，就是误报（2026-10-31 连续踩了三次）。
+
+正确做法：
+- 导航后**轮询**（每 1.5s，最多 60s）直到 URL 回到 `partner.microsoft.com` 且正文含
+  `Extension overview` / `Store listings` 之类的页面标题；
+- 只有在**轮询超时后**才认为是真的掉登录，再请用户处理；
+- 判断"保存成功"同理：`Save draft` 按钮变灰 = 已无未保存改动，这比找 toast 更可靠。
