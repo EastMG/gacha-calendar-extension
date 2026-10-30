@@ -81,6 +81,9 @@ src/options.*          设置页
 src/popup-panel.html   新日程面板（实验）的 popup 宿主
 src/panel.js           新日程面板的挂载与数据装配（React root / 刷新 / 时钟）
 src/schedule/          新日程面板：一比一移植自 DSH 插件的组件与样式
+  · 扩展侧新增：新面板底栏在「刷新」右侧加了「设置」（齿轮）按钮 → `chrome.runtime.openOptionsPage()`。
+    DSH 面板嵌在应用里、设置由外壳打开，所以上游没有这个按钮；扩展里 popup 是独立窗口，
+    没有它就只能"右键工具栏图标 → 扩展选项"。旧 popup 顶栏本来就有同款齿轮，两处图标已统一（16 viewBox / 1.5）。
   schedule-view.js      组件本体（原样移植，见「设计要点 5」）
   schedule.css          从插件提取的 sched/slot 样式 + DSH 主题变量兜底
 src/verify-boot.js     启动自检（仅 `--verify` 构建时打进 background.js，正常构建不含）

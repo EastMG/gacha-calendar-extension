@@ -140,6 +140,8 @@ function render() {
 		colorMap: parseJson(state.gameColors, {}),
 		refreshing: state.refreshing,
 		onRefresh: doRefresh,
+		// 设置入口：popup 里点一下 → 新标签页打开扩展设置（浏览器会先关掉 popup）
+		onOpenSettings: () => chrome.runtime.openOptionsPage(),
 		lastRefreshText: state.refreshedAt ? new Date(state.refreshedAt).toLocaleString() : "—",
 		scrapeInfo: state.scrapeInfo,
 		scrapeLines: state.scrapeLines,

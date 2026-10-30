@@ -1,4 +1,4 @@
-﻿// 新日程面板（实验特性）—— **一比一**移植自 DSH 插件 dsh-gacha-calendar。
+// 新日程面板（实验特性）—— **一比一**移植自 DSH 插件 dsh-gacha-calendar。
 //
 // 来源：该仓库 src/client/80-components.js
 //   · 第 66-98 行   gameIconGlyph / GameIcon
@@ -457,6 +457,25 @@ function scheduleRefreshIcon(cls) {
 		]
 	});
 }
+/**
+ * 齿轮图标（底栏「设置」按钮）。
+ *
+ * 扩展侧新增：DSH 面板嵌在应用里，设置由应用外壳打开，面板内没有这个入口；
+ * 浏览器扩展里面板是独立 popup，没有它就只剩"右键工具栏图标 → 扩展选项"。
+ * 尺寸/线宽与 scheduleRefreshIcon 一致（16 viewBox / 1.5）。
+ */
+function scheduleGearIcon(cls) {
+	return (0, react_jsx_runtime.jsxs)("svg", {
+		className: cls, viewBox: "0 0 16 16", fill: "none", stroke: "currentColor",
+		strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round",
+		"aria-hidden": "true", focusable: "false",
+		children: [
+			(0, react_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "2.1" }),
+			(0, react_jsx_runtime.jsx)("path", { d: "M12.7 9.6a1.1 1.1 0 0 0 .22 1.21l.04.04a1.34 1.34 0 1 1-1.9 1.9l-.04-.04a1.1 1.1 0 0 0-1.21-.22 1.1 1.1 0 0 0-.67 1v.11a1.34 1.34 0 1 1-2.68 0v-.06a1.1 1.1 0 0 0-.72-1 1.1 1.1 0 0 0-1.21.22l-.04.04a1.34 1.34 0 1 1-1.9-1.9l.04-.04a1.1 1.1 0 0 0 .22-1.21 1.1 1.1 0 0 0-1-.67h-.11a1.34 1.34 0 1 1 0-2.68h.06a1.1 1.1 0 0 0 1-.72 1.1 1.1 0 0 0-.22-1.21l-.04-.04a1.34 1.34 0 1 1 1.9-1.9l.04.04a1.1 1.1 0 0 0 1.21.22h.05a1.1 1.1 0 0 0 .67-1v-.11a1.34 1.34 0 1 1 2.68 0v.06a1.1 1.1 0 0 0 .67 1 1.1 1.1 0 0 0 1.21-.22l.04-.04a1.34 1.34 0 1 1 1.9 1.9l-.04.04a1.1 1.1 0 0 0-.22 1.21v.05a1.1 1.1 0 0 0 1 .67h.11a1.34 1.34 0 1 1 0 2.68h-.06a1.1 1.1 0 0 0-1 .67z" })
+		]
+	});
+}
+
 // GameIcon 自带 5px 圆角；这里用外层方框定尺寸/圆角/描边（多出来的圆角由 overflow 裁掉）。
 // 尺寸与设计稿一致：近期行 26（图 24 + 1px 描边）、游戏表 40（图 38 + 1px 描边）。
 function scheduleIcon(cls, g, size) {
@@ -736,7 +755,7 @@ function scheduleGlanceSegs(within24, within7) {
 		{ label: "7 天内 ", n: within7, tail: " 条" }
 	];
 }
-function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefreshText, scrapeInfo, scrapeLines, topMode, stacked, nearLimit }) {
+function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, onOpenSettings, lastRefreshText, scrapeInfo, scrapeLines, topMode, stacked, nearLimit }) {
 	// ══ 扩展侧改版（2026-10-21，有意偏离上游）══════════════════════════════════
 	// topMode = "recent" | "slot"
 	//   顶部区域**同一个位置**只显示一样：近期列表 或 近期卡片（设置页二选一）。
@@ -1057,7 +1076,19 @@ function ScheduleView({ games, now, s, colorMap, refreshing, onRefresh, lastRefr
 				"aria-label": refreshing ? "刷新中..." : "刷新",
 				onClick: onRefresh,
 				children: scheduleRefreshIcon("gacha-cal-sched-btn-ic")
-			})
+			}),
+			// 设置：**刷新右边**（最外侧）。保住「上次更新 / 刷新」这对关联，
+			// 与旧 popup 的「刷新 → 设置」顺序一致；低频动作放边缘，不易误触刷新。
+			onOpenSettings
+				? (0, react_jsx_runtime.jsx)("button", {
+					type: "button",
+					className: "gacha-cal-sched-btn",
+					title: "设置",
+					"aria-label": "设置",
+					onClick: onOpenSettings,
+					children: scheduleGearIcon("gacha-cal-sched-btn-ic")
+				})
+				: null
 		] })
 	] });
 }
