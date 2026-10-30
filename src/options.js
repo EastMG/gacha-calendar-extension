@@ -37,7 +37,6 @@ const REFRESH_OPTIONS = [
 ];
 
 const el = {
-	count: document.getElementById("count"),
 	entries: document.getElementById("entries"),
 	allowedHosts: document.getElementById("allowed-hosts"),
 	autoRefresh: document.getElementById("autoRefresh"),
@@ -212,8 +211,6 @@ function syncPanelTopEnabled() {
 function render() {
 	colorTable = sourceTable(engine);
 	const order = orderedGames();
-	// 副标题已去掉（用户 2026-10-30 要求），count 元素可能不存在 —— 保持可选
-	if (el.count) el.count.textContent = String(allGames.length);
 	el.autoRefresh.checked = cfg.autoRefresh !== false;
 	if (el.newPanel) el.newPanel.checked = cfg.newPanel !== false;
 	if (el.panelTop) el.panelTop.value = cfg.panelTop === "recent" ? "recent" : "slot";
@@ -759,6 +756,9 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 	};
 	render();
 })().catch((err) => {
-	if (el.count) el.count.textContent = "载入失败：" + String((err && err.message) || err);
-	else console.error("设置页载入失败：", err);
+	if (el.entries) {
+		el.entries.textContent = "载入失败：" + String((err && err.message) || err);
+	} else {
+		console.error("设置页载入失败：", err);
+	}
 });

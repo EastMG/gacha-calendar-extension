@@ -340,7 +340,7 @@ if (asyncErrors.length) {
 const entriesEl = document.getElementById("entries");
 if (entriesEl.children.length === 0) {
 	console.error("✗ 渲染为空。诊断：");
-	console.error(`  count 文本 = ${JSON.stringify(document.getElementById("count").textContent)}`);
+	console.error(`  entries HTML 长度 = ${entriesEl.innerHTML.length}`);
 	console.error(`  entries children = ${entriesEl.children.length}`);
 	process.exit(1);
 }
