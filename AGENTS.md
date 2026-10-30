@@ -27,7 +27,8 @@
 - Edge 商店**同一时间只能有一个在审提交**；新提交必须等上一个出结果。
 - 提交前跑一遍：`node build.mjs --zip && node verify.mjs && node tools/check-domains.mjs &&
   node tools/test-domain-guard.mjs && node tools/test-entry-meta.mjs && node tools/test-options.mjs &&
-  node tools/test-ics.mjs && node tools/check-listing.mjs && node tools/verify-zip.mjs release/*.zip`
+  node tools/test-ics.mjs && node tools/test-remind.mjs && node tools/check-listing.mjs &&
+  node tools/verify-zip.mjs release/*.zip`
 - 权限有变化时，必须先在 `store/privacy-fields/` 补齐对应理由文件（`check-listing.mjs` 会强制校验）。
 
 ## 3. 数据与权限

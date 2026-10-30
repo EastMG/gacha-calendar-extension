@@ -41,12 +41,22 @@
 					</span>
 				</div>
 				<div class="row">
-					<label class="lbl" for="notify">系统通知</label>
-					<input id="notify" type="checkbox" />
+					<label class="lbl" for="remindOn">到期提醒</label>
+					<input id="remindOn" type="checkbox" />
 					<span class="hint">
-						在条目到期前 <strong>3 小时</strong>与 <strong>24 小时</strong>各弹一次系统通知（按条目去重）。
-						只在浏览器运行期间生效；若开了 Edge 的「随系统启动 + 关闭后继续运行后台扩展」，开机后也能提醒。
+						条目到期前推送系统通知（默认开）。同一件事只发<strong>最紧急的那一档</strong>；
+						浏览器没运行时不会提醒，若开了 Edge 的「随系统启动 + 关闭后继续运行后台扩展」则可覆盖到开机后。
 					</span>
+				</div>
+				<div class="row">
+					<label class="lbl">提醒档位</label>
+					<div class="chips" id="remindChips" role="group" aria-label="提醒档位（到期前多少小时）"></div>
+					<span class="hint">可多选；<strong>全部取消 = 不提醒</strong>。</span>
+				</div>
+				<div class="row">
+					<label class="lbl">测试通知</label>
+					<button id="testNotify" class="btn" type="button">发送测试通知</button>
+					<span class="hint" id="testNotifyHint">用真实提醒同一套文案弹一条，验证通知链路是否打通。</span>
 				</div>
 				<div class="row">
 					<label class="lbl">导出日历</label>

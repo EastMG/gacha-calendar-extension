@@ -1,13 +1,17 @@
 notifications
 
-Used only for **deadline reminders**: when a banner or event is about to end (once at 3 hours before and
-once at 24 hours before), the extension shows a system notification saying which game/item is ending and
-how many hours are left.
+Used only for **deadline reminders**: before a banner or event ends (lead times of 72 / 24 / 6 / 2 hours,
+and for one item only its most urgent due lead time is delivered), the extension shows a system
+notification saying which game/item is ending and how many hours are left.
 
 Key points:
-1) **Off by default**: nothing is shown after install; it only works after the user explicitly ticks
-   "提醒与导出 -> 系统通知" in the settings page, and unchecking it stops it completely (dedupe state cleared).
-2) No network access: notification text comes entirely from the local cache (lastData in
+1) Can be switched off in the settings page ("提醒与导出 -> 到期提醒"). When off, no notifications are shown
+   at all. Lead times are four toggle chips (72/24/6/2 hours); clearing all of them also stops reminders.
+2) The settings page also has a "send test notification" button: it shows one notification **only when the
+   user clicks it**, so users can verify that the OS / Do Not Disturb does not block Chrome notifications.
+   It never touches real reminders and stores no dedupe state.
+3) No network access: notification text comes entirely from the local cache (lastData in
    chrome.storage.local); no requests are made.
-3) No page access: the extension has no content script.
-4) Rate-limited: each item notifies once per lead time (deduped by item + date range + lead), so it never spams.
+4) No page access: the extension has no content script.
+5) Rate-limited: each item notifies once per lead time (deduped by item + date range + direction + lead);
+   when several lead times are due at once they are collapsed into a single notification.

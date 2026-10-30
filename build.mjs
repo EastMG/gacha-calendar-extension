@@ -59,6 +59,8 @@ manifest.version = pkg.version;
 
 // —— 需要复制到 dist 的静态资源 ——
 const STATIC = [
+	// background service worker 直接 import 它（不经过打包），所以必须原样复制
+	["src/remind.js", "remind.js"],
 	["src/popup.html", "popup.html"],
 	["src/popup.css", "popup.css"],
 	["src/options.html", "options.html"],

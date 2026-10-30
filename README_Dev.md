@@ -42,12 +42,13 @@ node build.mjs --zip
 ```
 manifest.json          MV3 清单（权限最小化：只申请 storage + 精确域名）
 src/_locales/          i18n 消息（zh_CN / en）——**商店据此识别可用语言，不能删**
-src/background.js      service worker：白名单代发跨域请求（唯一的"代理"）+ 到期角标（alarms）
+src/background.js      service worker：白名单代发跨域请求（唯一的"代理"）+ 到期角标 + 到期通知（alarms）
 src/transport.js       core 需要的 transport：直连 + 经 background 代发
 src/storage.js         core 需要的 storage：chrome.storage.local 封装
 src/view-helpers.js    展示层纯函数（倒计时/角色名精简/悬停文案/行渲染模型）
 src/entry-meta.js      来源显示名口径（与 core 的 getDefaultSourceName 逐支对齐）
 src/ics.js             日历导出（RFC 5545 纯函数：转义 / 75-octet 折行 / UID / 生成）
+src/remind.js          到期提醒纯函数（照 DSH 移植：档位解析 / 折叠去重 / 通知文案 / 测试通知）
 src/visibility.js      展示/隐藏判定与写回
 src/popup.*            面板
 src/options.*          设置页

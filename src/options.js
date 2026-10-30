@@ -14,6 +14,7 @@ import { gameColor, isHexColor } from "./game-color.js";
 import { sourceTable } from "./entry-meta.js";
 import { buildIcs, icsFileName, fnv1a } from "./ics.js";
 import { parseDisplayRange } from "./view-helpers.js";
+import { REMIND_DEFAULT_END_NODES, remindNodesOf, remindNodesToggleOf } from "./remind.js";
 import { transport } from "./transport.js";
 import { createVisibility, toggleVisibility } from "./visibility.js";
 // 默认来源显示名与 core 的 getDefaultSourceName 同口径（含「未配置」文案）
@@ -40,7 +41,10 @@ const el = {
 	newPanel: document.getElementById("newPanel"),
 	panelTop: document.getElementById("panelTop"),
 	badge: document.getElementById("badge"),
-	notify: document.getElementById("notify"),
+	remindOn: document.getElementById("remindOn"),
+	remindChips: document.getElementById("remindChips"),
+	testNotify: document.getElementById("testNotify"),
+	testNotifyHint: document.getElementById("testNotifyHint"),
 	exportIcs: document.getElementById("exportIcs"),
 	refreshMinutes: document.getElementById("refreshMinutes"),
 	resetOrder: document.getElementById("resetOrder"),
@@ -73,8 +77,10 @@ let cfg = {
 	panelTop: "slot",
 	// 到期角标（工具栏图标上显示 3 天内到期数）；默认开
 	badge: true,
-	// 系统通知：默认**关闭**（notifications 权限已声明，但用户显式开启后才弹）
-	notify: false
+	// 到期提醒：默认**开**（与 DSH 的 remindOn 默认一致）；用户可在设置页关闭
+	remindOn: true,
+	// 提醒档位（到期前多少小时）：字符串，与 DSH 的 remindEndNodes 同格式
+	remindEndNodes: "72,24,6,2"
 };
 /** 生效中的条目（core 已按 removed 过滤）元信息。 */
 let allGames = [];
@@ -204,7 +210,8 @@ function render() {
 	if (el.newPanel) el.newPanel.checked = cfg.newPanel !== false;
 	if (el.panelTop) el.panelTop.value = cfg.panelTop === "recent" ? "recent" : "slot";
 	if (el.badge) el.badge.checked = cfg.badge !== false;
-	if (el.notify) el.notify.checked = cfg.notify === true;
+	if (el.remindOn) el.remindOn.checked = cfg.remindOn !== false;
+	renderRemindChips();
 	syncPanelTopEnabled();
 	renderRefreshOptions();
 
@@ -539,6 +546,46 @@ async function runSelfCheck() {
 	}
 }
 
+/** 渲染提醒档位胶囊（选中态 = 当前 remindEndNodes；全不选表示"不提醒"）。 */
+function renderRemindChips() {
+	if (!el.remindChips) return;
+	const selected = new Set(remindNodesOf(cfg.remindEndNodes, REMIND_DEFAULT_END_NODES));
+	el.remindChips.replaceChildren(
+		...REMIND_DEFAULT_END_NODES.map((n) => {
+			const b = document.createElement("button");
+			b.type = "button";
+			b.className = "chip";
+			b.dataset.node = String(n);
+			b.textContent = n + " 小时";
+			b.setAttribute("aria-pressed", selected.has(n) ? "true" : "false");
+			b.addEventListener("click", () => {
+				cfg.remindEndNodes = remindNodesToggleOf(cfg.remindEndNodes, n, REMIND_DEFAULT_END_NODES);
+				commit({ remindEndNodes: cfg.remindEndNodes });
+			});
+			return b;
+		})
+	);
+}
+
+/** 发送测试通知：与真实提醒完全隔离（不读写去重状态），只验证通知链路。 */
+async function sendTestNotify() {
+	if (!el.testNotify) return;
+	el.testNotify.disabled = true;
+	if (el.testNotifyHint) el.testNotifyHint.textContent = "发送中…";
+	try {
+		const res = await chrome.runtime.sendMessage({ type: "testNotify" });
+		if (res && res.ok) {
+			if (el.testNotifyHint) el.testNotifyHint.textContent = "已发送：" + res.title;
+		} else {
+			if (el.testNotifyHint) el.testNotifyHint.textContent = "发送失败：" + ((res && res.error) || "未知原因");
+		}
+	} catch (err) {
+		if (el.testNotifyHint) el.testNotifyHint.textContent = "发送失败：" + String((err && err.message) || err);
+	} finally {
+		el.testNotify.disabled = false;
+	}
+}
+
 /**
  * 导出「当前在期 / 尚未结束」的卡池与活动为 .ics 快照。
  *
@@ -610,7 +657,8 @@ el.autoRefresh.addEventListener("change", () => commit({ autoRefresh: el.autoRef
 if (el.newPanel) el.newPanel.addEventListener("change", () => { commit({ newPanel: el.newPanel.checked }); syncPanelTopEnabled(); });
 if (el.panelTop) el.panelTop.addEventListener("change", () => commit({ panelTop: el.panelTop.value === "slot" ? "slot" : "recent" }));
 if (el.badge) el.badge.addEventListener("change", () => commit({ badge: el.badge.checked }));
-if (el.notify) el.notify.addEventListener("change", () => commit({ notify: el.notify.checked }));
+if (el.remindOn) el.remindOn.addEventListener("change", () => commit({ remindOn: el.remindOn.checked }));
+if (el.testNotify) el.testNotify.addEventListener("click", () => sendTestNotify());
 if (el.exportIcs) el.exportIcs.addEventListener("click", () => exportCalendar());
 el.refreshMinutes.addEventListener("change", () => commit({ refreshMinutes: Number(el.refreshMinutes.value) }));
 el.resetOrder.addEventListener("click", () => commit({ order: null }));
@@ -654,7 +702,9 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 			"panelTop",
 			"gameColors",
 			"badge",
-			"notify"
+			"remindOn",
+			"remindEndNodes",
+			"notifyName"
 		])
 	]);
 	allGames = games;
@@ -676,7 +726,9 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		// 落盘是 JSON 字符串；这里解析回对象（{ 游戏id: "#rrggbb" }）
 		gameColors: parseJson(stored.gameColors, {}),
 		badge: stored.badge !== false,
-		notify: stored.notify === true
+		// 默认开；兼容 0.2.33 之前的旧键 notify（那版默认关）
+		remindOn: typeof stored.remindOn === "boolean" ? stored.remindOn : stored.notify === false ? false : true,
+		remindEndNodes: typeof stored.remindEndNodes === "string" ? stored.remindEndNodes : "72,24,6,2"
 	};
 	render();
 })().catch((err) => {

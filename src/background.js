@@ -13,6 +13,15 @@
 // 否则任何网页都能通过消息桥驱使扩展去请求任意地址。
 
 /** 允许代发的主机白名单（与 manifest.host_permissions 同源，精确或子域匹配）。 */
+import {
+	NOTIFY_NAME_DEFAULT,
+	REMIND_DEFAULT_END_NODES,
+	remindItemsOf,
+	remindTickOf,
+	remindToastOf,
+	remindTestToastOf
+} from "./remind.js";
+
 const ALLOW_HOSTS = [
 	"ak.hypergryph.com",
 	"aki-gm-resources-back.aki-game.com",
@@ -76,12 +85,21 @@ function hostAllowed(hostname) {
 /**
  * 消息来源校验：只接受本扩展自己的页面（popup / options / 扩展页）。
  * 其他网页/内容脚本一律拒绝。
+ *
+ * ⚠️ 不能只看 `sender.tab === undefined`（2026-10-30 真机踩到）：
+ *    设置页是用 `chrome.runtime.openOptionsPage()` 开在**标签页**里的，此时 `sender.tab` 是有的，
+ *    旧实现会把设置页自己发的消息判成 untrusted —— 「发送测试通知」直接回 `untrusted-sender`，
+ *    （同理，设置页的解析器自检走 proxyFetch 也会被拒）。
+ *    正确判据是**发送者 URL 属于本扩展**：`chrome-extension://<本扩展 id>/…`。
+ *    扩展没有 content script，网页里的消息 `sender.id` 为空 / URL 不是扩展源，仍会被拒。
  */
 function trustedSender(sender) {
 	if (!sender) return false;
 	if (sender.id !== chrome.runtime.id) return false;
-	// 扩展自己的页面没有 tab；有 tab 的一律不信任（本扩展不注册任何内容脚本）
-	return sender.tab === undefined;
+	const url = typeof sender.url === "string" ? sender.url : "";
+	if (url.startsWith(`chrome-extension://${chrome.runtime.id}/`)) return true;
+	// 极少见：没有 url 的扩展内部调用（无 tab 时）也放行；带 tab 但没有扩展 URL 的一律拒
+	return url === "" && sender.tab === undefined;
 }
 
 /**
@@ -137,6 +155,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 	if (!trustedSender(sender)) {
 		sendResponse({ ok: false, error: "untrusted-sender" });
 		return false;
+	}
+	// 「发送测试通知」：设置页按钮 → 这里生成 DSH 同款文案并弹一条，用完即弃（不读写去重状态）
+	if (msg && msg.type === "testNotify") {
+		(async () => {
+			const store = await chrome.storage.local.get("notifyName");
+			const now = Date.now();
+			const toast = remindTestToastOf(now, store.notifyName);
+			await chrome.notifications.create(`gc:test:${now}`, {
+				type: "basic",
+				iconUrl: "icons/icon-128.png",
+				title: toast.title,
+				message: toast.lines.join("\n"),
+				priority: 2
+			});
+			sendResponse({ ok: true, title: toast.title, lines: toast.lines });
+		})().catch((err) => sendResponse({ ok: false, error: String((err && err.message) || err) }));
+		return true;
 	}
 	if (!msg || msg.type !== "proxyFetch") {
 		sendResponse({ ok: false, error: "unknown-message" });
@@ -259,84 +294,48 @@ async function updateBadge() {
 	}
 }
 
-// —— 到期通知 ——
+// —— 到期通知（口径一比一照抄 DSH 版）——
 //
-// 与角标同一份数据、同一个闹钟（每 30 分钟）。**默认关闭**，设置页「提醒与导出 → 系统通知」才开启：
-// notifications 权限在安装时就已声明，但只有用户显式开启后才会真的弹通知（避免装完就打扰）。
+// 与角标共用同一个 30 分钟 alarm。真正的判定逻辑在 src/remind.js（纯函数移植，见那里的注释）：
+//   · 档位 = 结束后 72 / 24 / 6 / 2 小时（设置页胶囊，可全点掉 = 不提醒）
+//   · 同一轮内**折叠**：几条档位同时到期时只发最紧急的那一档，其余标已发 ⇒ 补跑不会连环弹
+//   · 文案与 DSH 一致：标题「即将结束 · 原神」，正文「卡池「…」/ 起止时间 / 还剩 2 天 3 小时（24 小时提醒）」
+//   · 去重状态存 `remindState`：{ "id|side|end|T": { fired: [72, 24] } }，T 过期即清
 //
-// 提醒档位：到期前 **3 小时** 与 **24 小时** 各一次（按条目 + 档期去重，不重复轰炸）。
-// 去重记录存 `notified`（`{ key: 通知时间 }`），只保留 30 天内、且档期未结束的条目，避免无限增长。
-//
-// ⚠️ 同样受浏览器生命周期限制：浏览器没运行（含后台进程被关掉）时不会提醒。
+// ⚠️ 送达受浏览器生命周期限制：浏览器没运行（含后台进程被关掉）时不会提醒。
 //    用户若开了 Edge 的「随系统启动 + 关闭后继续运行后台扩展」，覆盖时间就很完整。
-const NOTIFY_LEADS_MIN = [180, 24 * 60]; // 3 小时 / 24 小时（升序：取"最接近的最小档"）
-const NOTIFIED_KEY = "notified";
-
-/** 剩余时间的人话文案：`X 天 X 小时` / `X 小时 X 分钟` / `X 分钟`。 */
-function fmtLeft(ms) {
-	const diff = Math.max(0, Number(ms) || 0);
-	const d = Math.floor(diff / 864e5);
-	const h = Math.floor((diff % 864e5) / 36e5);
-	const mi = Math.floor((diff % 36e5) / 6e4);
-	if (d > 0) return `${d} 天 ${h} 小时`;
-	if (h > 0) return `${h} 小时 ${mi} 分钟`;
-	return `${mi} 分钟`;
-}
+const REMIND_STATE_KEY = "remindState";
 
 async function checkReminders() {
 	try {
-		const store = await chrome.storage.local.get(["lastData", "notify", NOTIFIED_KEY]);
-		// 默认关闭：只有显式存了 true 才提醒
-		if (store.notify !== true) return;
+		const store = await chrome.storage.local.get(["lastData", "remindOn", "remindEndNodes", "notifyName", REMIND_STATE_KEY, "notify"]);
+		// 默认开（与 DSH 的 remindOn 默认一致）；兼容 0.2.33 的旧键 notify（那版默认关）
+		const on = typeof store.remindOn === "boolean" ? store.remindOn : store.notify === false ? false : true;
+		if (!on) return;
 		let map = {};
 		try {
 			map = store.lastData ? JSON.parse(store.lastData) : {};
 		} catch {
 			map = {};
 		}
-		const seen = store[NOTIFIED_KEY] && typeof store[NOTIFIED_KEY] === "object" ? store[NOTIFIED_KEY] : {};
 		const now = Date.now();
-		const next = {};
-		for (const [id, rec] of Object.entries(map || {})) {
-			if (!rec || typeof rec !== "object") continue;
-			const sides = [
-				["gacha", "bannerDates", "banner", "卡池"],
-				["event", "eventDates", "event", "活动"]
-			];
-			for (const [side, field, titleField, label] of sides) {
-				const r = parseBadgeRange(rec[field], now);
-				if (!r || r.endTs <= now) continue;
-				const left = r.endTs - now;
-				// 升序取第一个满足的档：剩 2 小时 → 走 3 小时档（24 小时档在 20 小时时已经发过）
-				const lead = NOTIFY_LEADS_MIN.find((m) => left <= m * 60000);
-				if (!lead) continue;
-				const key = `${id}|${side}|${r.endTs}|${lead}`;
-				if (seen[key]) {
-					next[key] = seen[key];
-					continue;
-				}
-				const name = String(rec[titleField] || "").trim() || "（未命名）";
-				try {
-					await chrome.notifications.create(`gc:${key}`, {
-						type: "basic",
-						iconUrl: "icons/icon-128.png",
-						title: `二游日历 · ${label} ${fmtLeft(left)}后结束`,
-						message: name,
-						priority: 1
-					});
-				} catch {
-					/* 通知失败不影响角标 */
-				}
-				next[key] = now;
+		const items = remindItemsOf(map, now);
+		const { toNotify, stateNext } = remindTickOf(now, items, { remindEndNodes: store.remindEndNodes }, store[REMIND_STATE_KEY]);
+		for (const n of toNotify) {
+			const toast = remindToastOf(n, now, store.notifyName);
+			try {
+				await chrome.notifications.create(`gc:${n.key}:${n.node}`, {
+					type: "basic",
+					iconUrl: "icons/icon-128.png",
+					title: toast.title,
+					message: toast.lines.join("\n"),
+					priority: 2
+				});
+			} catch {
+				/* 单条失败不影响其余 */
 			}
 		}
-		// 清理：只保留"档期未结束且 30 天内通知过"的键
-		const cutoff = now - 30 * 864e5;
-		for (const [k, ts] of Object.entries(seen)) {
-			const endTs = Number(String(k).split("|")[2]) || 0;
-			if (endTs > now && ts > cutoff) next[k] = ts;
-		}
-		await chrome.storage.local.set({ [NOTIFIED_KEY]: next });
+		await chrome.storage.local.set({ [REMIND_STATE_KEY]: stateNext });
 	} catch {
 		/* 提醒失败不影响任何主流程 */
 	}

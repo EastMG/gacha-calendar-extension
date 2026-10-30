@@ -331,3 +331,29 @@ input[type="color"].color-swatch::-webkit-color-swatch {
 	line-height: 1;
 	border-radius: 999px;
 }
+
+/* 提醒档位胶囊（与 DSH 设置页同交互：点一下切换选中，可多选；全不选 = 不提醒） */
+.chips {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+.chip {
+	border: 1px solid var(--line, #d8d8d8);
+	background: transparent;
+	color: inherit;
+	border-radius: 999px;
+	padding: 3px 10px;
+	font: inherit;
+	font-size: 12px;
+	cursor: pointer;
+	transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.chip[aria-pressed="true"] {
+	background: var(--accent-soft, #e8f0fe);
+	border-color: var(--accent, #3b6fd4);
+}
+.chip:focus-visible {
+	outline: 2px solid var(--accent, #3b6fd4);
+	outline-offset: 1px;
+}
