@@ -15,7 +15,8 @@ import {
 	remindTickOf,
 	remindToastOf,
 	remindWindowOf,
-	remindGamesOf,
+	remindOffGamesOf,
+	remindGameAllowed,
 	filterRemindGames
 } from "../src/remind.js";
 
@@ -161,15 +162,41 @@ console.log("\n=== 7. 测试通知文案（remindTestToastOf）===");
 	check("空应用名回落默认", remindTestToastOf(now, "  ").lines[0] === "发送者：" + NOTIFY_NAME_DEFAULT);
 }
 
-console.log("\n=== 8. 逐游戏白名单（remindGames）===");
+console.log("\n=== 8. 提醒取消列表（remindOffGames）+ 展示上位 ===");
 {
 	const games = { genshin: { name: "原神" }, hsr: { name: "星铁" }, zzz: { name: "绝区零" } };
-	check("键缺失 ⇒ 不限制（全部）", Object.keys(filterRemindGames(games, undefined)).length === 3);
-	check("坏值（字符串）⇒ 不限制", Object.keys(filterRemindGames(games, "genshin")).length === 3);
-	check("列表只留命中的", JSON.stringify(Object.keys(filterRemindGames(games, ["genshin", "zzz"]))) === '["genshin","zzz"]');
-	check("空数组 ⇒ 一个都不提醒", Object.keys(filterRemindGames(games, [])).length === 0);
-	check("列表里不存在的 id 不影响结果", Object.keys(filterRemindGames(games, ["nope"])).length === 0);
-	check("数字 id 也按字符串比较", remindGamesOf([1, "2"]).has("1") && remindGamesOf([1, "2"]).has("2"));
+	const shownAll = { hidden: [], shown: [], defaultHiddenIds: [] };
+
+	check("空取消列表 ⇒ 全部提醒（默认全选）", Object.keys(filterRemindGames(games, [], shownAll)).length === 3);
+	check("键缺失 ⇒ 回落全选", Object.keys(filterRemindGames(games, undefined, shownAll)).length === 3);
+	check("坏值（字符串）⇒ 回落全选", Object.keys(filterRemindGames(games, "genshin", shownAll)).length === 3);
+	check(
+		"取消列表只排除列表里的",
+		JSON.stringify(Object.keys(filterRemindGames(games, ["genshin", "zzz"], shownAll))) === '["hsr"]'
+	);
+	check("取消列表里不存在的 id 无影响", Object.keys(filterRemindGames(games, ["nope"], shownAll)).length === 3);
+
+	// 展示是上位：hidden 里的游戏即使没被取消也不提醒
+	const hiddenGenshin = { hidden: ["genshin"], shown: [], defaultHiddenIds: [] };
+	check(
+		"hidden 里的条目不提醒（展示上位）",
+		!Object.keys(filterRemindGames(games, [], hiddenGenshin)).includes("genshin")
+	);
+	check("hidden 其他条目照常提醒", Object.keys(filterRemindGames(games, [], hiddenGenshin)).length === 2);
+
+	// 出厂默认隐藏：没有 shown 时不展示 ⇒ 不提醒；勾了 shown 才提醒
+	const defHidden = { hidden: [], shown: [], defaultHiddenIds: ["zzz"] };
+	check("出厂隐藏且未 shown ⇒ 不提醒", !Object.keys(filterRemindGames(games, [], defHidden)).includes("zzz"));
+	check("出厂隐藏 + shown ⇒ 提醒", Object.keys(filterRemindGames(games, [], { ...defHidden, shown: ["zzz"] })).includes("zzz"));
+
+	// 单条判定
+	check("remindGameAllowed: 展示中且未取消 ⇒ true", remindGameAllowed("genshin", [], shownAll) === true);
+	check("remindGameAllowed: 在取消列表 ⇒ false", remindGameAllowed("genshin", ["genshin"], shownAll) === false);
+	check("remindGameAllowed: 未展示 ⇒ false", remindGameAllowed("genshin", [], hiddenGenshin) === false);
+
+	// 归一
+	check("remindOffGamesOf 只留非空字符串", JSON.stringify(remindOffGamesOf(["a", 1, null, "", "b"])) === '["a","b"]');
+	check("remindOffGamesOf 非数组 ⇒ []", JSON.stringify(remindOffGamesOf("bad")) === "[]");
 }
 
 console.log("\n=== 8. 状态归一（remindStateOf）===");

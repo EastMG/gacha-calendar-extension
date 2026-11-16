@@ -88,8 +88,8 @@ let cfg = {
 	remindOn: true,
 	// 提醒档位（到期前多少小时）：字符串，与 DSH 的 remindEndNodes 同格式
 	remindEndNodes: "72,24,6,2",
-	// 推送白名单；null = 尚未落盘（按 core 出厂白名单显示）
-	remindGames: null
+	// 提醒**取消列表**（core 0.14.0 语义：默认全选，列表里只装手动取消的）
+	remindOffGames: []
 };
 /** 生效中的条目（core 已按 removed 过滤）元信息。 */
 let allGames = [];
@@ -244,20 +244,25 @@ function renderRefreshOptions() {
 	el.refreshMinutes.value = cfg.refreshMode === "interval" ? String(current) : REFRESH_STARTUP.value;
 }
 
-/** 出厂提醒白名单（core 的 DEFAULT_SETTINGS.remindGames）；取不到就空数组。 */
-function defaultRemindGames() {
-	const v = engine.__test && engine.__test.DEFAULT_SETTINGS && engine.__test.DEFAULT_SETTINGS.remindGames;
-	return Array.isArray(v) ? v.map(String) : [];
+/** 提醒取消列表（core 0.14.0：`remindOffGames` = 用户手动取消的 id；空数组 = 全部提醒）。 */
+function remindOffList() {
+	return Array.isArray(cfg.remindOffGames) ? cfg.remindOffGames.map(String) : [];
 }
 
-/** 当前生效的提醒白名单：用户写过数组就用数组（空数组 = 一个都不提醒），否则用出厂列表。 */
-function remindIds() {
-	return Array.isArray(cfg.remindGames) ? cfg.remindGames : defaultRemindGames();
+/** 条目当前是"展示中"吗（与面板/提醒侧同一套规则）。 */
+function entryShownNow(gameId) {
+	const vis = createVisibility(engine, cfg);
+	return vis.isChecked(gameId);
 }
 
-/** 某条目是否在白名单里。 */
-function remindAllowed(id) {
-	return remindIds().includes(String(id));
+/**
+ * 条目的「提醒」是否勾选：展示中 ∧ 未在取消列表里。
+ * ⚠️ 展示关掉的条目一律显示为**未勾选且禁用**（提醒是展示的下位），但不写进取消列表
+ * —— 这样"展示关 → 开"会自动回到勾选，符合 core 的语义。
+ */
+function remindCheckedOf(gameId) {
+	if (!entryShownNow(gameId)) return false;
+	return !remindOffList().includes(String(gameId));
 }
 
 function renderEntry(game, index, order) {
@@ -303,16 +308,14 @@ function renderEntry(game, index, order) {
 	if (!visibleNow) remindCell.style.opacity = "0.45";
 	const remindCb = document.createElement("input");
 	remindCb.type = "checkbox";
-	remindCb.checked = remindAllowed(game.id);
+	remindCb.checked = visibleNow && remindCheckedOf(game.id);
 	remindCb.disabled = !visibleNow;
 	remindCb.title = visibleNow ? "到期提醒是否包含这一条" : "未展示的条目不会提醒（先勾「展示」）";
 	remindCb.addEventListener("change", () => {
-		const cur = remindIds();
-		const next = remindCb.checked
-			? [...new Set([...cur, String(game.id)])]
-			: cur.filter((x) => x !== String(game.id));
-		// 普通列表语义：空数组 = 一个都不提醒（不回落出厂）
-		commit({ remindGames: next });
+		// 取消列表：勾上 = 从列表摘掉，取消 = 加进列表（空数组 = 全部提醒）
+		const cur = remindOffList().filter((x) => x !== String(game.id));
+		const next = remindCb.checked ? cur : [...cur, String(game.id)];
+		commit({ remindOffGames: next });
 	});
 	remindCell.appendChild(remindCb);
 	row.appendChild(remindCell);
@@ -766,7 +769,8 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 			"badge",
 			"remindOn",
 			"remindEndNodes",
-			"remindGames",
+			"remindOffGames",
+			"remindMigrated",
 			"notifyName"
 		])
 	]);
@@ -795,7 +799,7 @@ el.selfCheck.addEventListener("click", () => runSelfCheck());
 		remindOn: typeof stored.remindOn === "boolean" ? stored.remindOn : stored.notify === false ? false : true,
 		remindEndNodes: typeof stored.remindEndNodes === "string" ? stored.remindEndNodes : "72,24,6,2",
 		// null = 用出厂白名单（不写死数组，避免"新来源升级后默认不提醒"）
-		remindGames: Array.isArray(stored.remindGames) ? stored.remindGames.map(String) : null
+		remindOffGames: Array.isArray(stored.remindOffGames) ? stored.remindOffGames.map(String) : []
 	};
 	render();
 })().catch((err) => {

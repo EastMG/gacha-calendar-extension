@@ -34,10 +34,16 @@ const transport = {
 
 const engine = createEngine({ transport, storage });
 
-/** 出厂提醒白名单（core DEFAULT_SETTINGS.remindGames = 出厂可见条目），供 background 兜底。 */
-export const DEFAULT_REMIND_GAMES = (() => {
-	const v = engine.__test && engine.__test.DEFAULT_SETTINGS && engine.__test.DEFAULT_SETTINGS.remindGames;
-	return Array.isArray(v) ? v.map(String) : [];
+/**
+ * 出厂**默认隐藏**的条目 id（= core SOURCES 里 `defaultHidden === true` 的那些）。
+ *
+ * 用途：提醒侧的「展示中」判定需要它（出厂隐藏的条目要用户勾了「展示」才算展示中）。
+ * 直接从 core 的运行时来源表取，避免在扩展里抄第二份容易漂移的常量。
+ */
+export const DEFAULT_HIDDEN_IDS = (() => {
+	const sources = engine.__test && engine.__test.SOURCES;
+	if (!Array.isArray(sources)) return [];
+	return sources.filter((s) => s && s.defaultHidden === true).map((s) => String(s.id));
 })();
 
 /** 同一时间只允许一轮（多处触发撞车时共用同一个 Promise）。 */

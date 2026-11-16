@@ -231,7 +231,9 @@ check("core 只内联一份（不含重复副本）", coreChunks.length === 1, c
 const totalJsKb = Math.round(jsFiles.reduce((n, rel) => n + fs.statSync(path.join(DIST, rel)).size, 0) / 1024);
 const coreKb = Math.round((coreChunks[0] ? coreChunks[0].size : 0) / 1024);
 check("core 所在产物达到内联体量（>250 KB）", (coreChunks[0] ? coreChunks[0].size : 0) > 250 * 1024, `${coreKb} KB`);
-check("全部 JS 合计 < 1.2 MB（代码分割后的合理上界）", totalJsKb < 1200, `${totalJsKb} KB`);
+// 上界随 core 规模走：core 0.14.0 条目 28→61，单份 core 414KB→859KB，合计约 1.2MB。
+// 留出余量到 1.6MB；再涨说明可能又退化成"多份副本"（core 只内联一份的检查会先报）。
+check("全部 JS 合计 < 1.6 MB（代码分割后的合理上界）", totalJsKb < 1600, `${totalJsKb} KB`);
 
 // 新日程面板（实验特性）：页面宿主、样式与打包产物必须都在 dist 里，
 // 否则开启开关后点工具栏会打不开页面（且不会有任何提示）。

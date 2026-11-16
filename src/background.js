@@ -18,7 +18,7 @@
 const BUILD_ID = "__BUILD_ID__";
 
 import { proxyFetch } from "./proxy.js";
-import { DEFAULT_REMIND_GAMES, runRefreshTick } from "./refresh-worker.js";
+import { DEFAULT_HIDDEN_IDS, runRefreshTick } from "./refresh-worker.js";
 
 import {
 	NOTIFY_NAME_DEFAULT,
@@ -27,7 +27,8 @@ import {
 	remindTickOf,
 	remindToastOf,
 	remindTestToastOf,
-	filterRemindGames
+	filterRemindGames,
+	remindOffGamesOf
 } from "./remind.js";
 
 // 白名单与代发实现见 ./proxy.js（background 原样复制进 dist，所以那份文件也要复制）
@@ -231,7 +232,10 @@ async function checkReminders() {
 			"lastData",
 			"remindOn",
 			"remindEndNodes",
-			"remindGames",
+			"remindOffGames",
+			"remindMigrated",
+			"hidden",
+			"shown",
 			"notifyName",
 			REMIND_STATE_KEY,
 			"notify"
@@ -246,9 +250,15 @@ async function checkReminders() {
 			map = {};
 		}
 		const now = Date.now();
-		// remindGames = 逐游戏白名单（列表里有谁就提醒谁；空数组 = 一个都不提醒）
-		// 角标不按这个白名单算 —— 它是"还有几条快到期"的全局概览，与"要不要推送"是两件事
-		const items = remindItemsOf(filterRemindGames(map, store.remindGames, DEFAULT_REMIND_GAMES), now);
+		// remindOffGames = 逐条目**取消列表**（core 0.14.0 语义）：默认全选，只排除用户手动取消的；
+		// 同时「展示中」是上位条件（展示关掉的条目即便没取消也不提醒）。
+		// 角标不按它算 —— 角标是"还有几条快到期"的全局概览，与"要不要推送"是两件事。
+		const shownState = {
+			hidden: Array.isArray(store.hidden) ? store.hidden : [],
+			shown: Array.isArray(store.shown) ? store.shown : [],
+			defaultHiddenIds: DEFAULT_HIDDEN_IDS
+		};
+		const items = remindItemsOf(filterRemindGames(map, store.remindOffGames, shownState), now);
 		const { toNotify, stateNext } = remindTickOf(now, items, { remindEndNodes: store.remindEndNodes }, store[REMIND_STATE_KEY]);
 		for (const n of toNotify) {
 			const toast = remindToastOf(n, now, store.notifyName);
@@ -310,7 +320,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 	if (area !== "local") return;
 	if (changes.autoRefresh || changes.refreshMode || changes.refreshMinutes) tickAndUpdate();
 	if (changes.lastData || changes.badge) updateBadge();
-	if (changes.lastData || changes.remindOn || changes.remindGames) checkReminders();
+	if (changes.lastData || changes.remindOn || changes.remindOffGames || changes.hidden || changes.shown) checkReminders();
 });
 // SW 每次被唤醒（例如用户点图标）也顺手跑一次管道，避免等满 30 分钟
 tickAndUpdate();

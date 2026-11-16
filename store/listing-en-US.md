@@ -5,17 +5,17 @@
 
 ## Description（必填，250 ~ 10000 字符）
 
-当前字数：2246 字符。
+当前字数：2704 字符。
 
 ```
-"Gacha Calendar" collects the currently running banners and events of 28 anime-style mobile games into one place.
+"Gacha Calendar" collects the currently running banners and events of 61 anime-style mobile games into one place.
 
 Click the toolbar icon to open a schedule panel (520x600):
 - The top area is a "recent card" showing the most urgent item (icon, days left, date range, progress ring) with the next three items listed beside it. You can switch it to a "recent list" in settings.
 - Below that is the schedule table: each game takes two lines - the current banner (with featured characters) on the first, the current event on the second - each with its date range, a live countdown such as "9d 3h 54m remaining", and a 14-day progress bar.
 - Hover over a line to see the full banner name, the complete featured-character list, and the original date text.
 
-Supported games (28): Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Honkai Impact 3rd, Wuthering Waves, Arknights, Arknights: Endfield, Blue Archive (CN / Global / JP), BanG Dream! Girls Band Party, BanG Dream! OurNotes (JP / Global), Wuhua Mixin, Punishing: Gray Raven, Chaos Zero Nightmare, Cedar, Dudufaces, Uma Musume Pretty Derby (JP / Global), Persona5: The Phantom X, Neverness to Everness, Girls' Frontline 2: Exilium, Fate/Grand Order, Project SEKAI (CN), Stellar Sora, Reverse: 1999.
+Supported games (61): 61 entries across Chinese, Japanese, Korean and global servers — including Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Honkai Impact 3rd, Wuthering Waves, Arknights, Arknights: Endfield, Blue Archive (CN / Global / JP), Uma Musume (JP / Global / Traditional Chinese / Korean), Princess Connect (JP / TW), Granblue Fantasy (JP), BanG Dream! (CN / OurNotes JP / OurNotes Global), Love and Deepspace, Infinity Nikki, Shining Nikki, Persona5: The Phantom X, Neverness to Everness, Tower of Fantasy, Lovebrush Chronicles, Onmyoji, The Idolmaster series (JP), Project SEKAI (CN / TW / KR), Fate/Grand Order (CN / JP), Azur Lane (CN / JP), Puzzle & Dragons (JP), Monster Strike (JP), Kantai Collection (JP), Chaos Zero Nightmare, Wuhua Mixin, Cedar, Bai Jing Hui Lang, Path to Nowhere, Nightfall, Heaven Burns Red, Brown Dust 2 (Global), ResoNaria, Stellar Sora, Girls' Frontline 2: Exilium, Reverse: 1999, Blind Box Party, Dudufaces.
 
 Features:
 - See every current banner and event at a glance, with remaining-time countdowns

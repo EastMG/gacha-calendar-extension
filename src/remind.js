@@ -169,29 +169,51 @@ export function remindWindowOf(text, nowMs) {
 }
 
 /**
- * 「到期提醒（送达）」的逐游戏白名单（对应 core 的 `remindGames`）。
+ * 「到期提醒（送达）」的逐条目**取消列表**（对应 core 0.14.0 的 `remindOffGames`）。
  *
- * 语义（与 DSH 一致，**普通列表**）：列表里有谁就提醒谁；**空数组 = 一个都不提醒**。
- * 键缺失 / 不是数组 ⇒ 视为"不限制"（等价于 DSH 的出厂默认：所有非 defaultHidden 的条目）。
- * 返回 `null` 表示不限制，否则返回 Set。
+ * 2026-11-09 上游改的语义：**默认全选 + 取消列表**。
+ *   生效提醒 = 条目**展示中** ∧ **不在**取消列表里      ← 「展示」是提醒的上位
+ * 出厂 `[]` = 每条都勾选；列表只装用户手动取消的那几条。
+ * 非数组（键缺失 / 读坏）⇒ 回落 `[]`（= 全选），而不是"全不提醒" —— 配置读坏不该让提醒静默消失。
  */
-export function remindGamesOf(value) {
-	if (!Array.isArray(value)) return null;
-	return new Set(value.map((x) => String(x)));
+export function remindOffGamesOf(value) {
+	if (!Array.isArray(value)) return [];
+	return value.filter((v) => typeof v === "string" && v !== "");
 }
 
 /**
- * 按白名单过滤 lastData 的 games。注意**不要**把"空数组"当成"没配置" ——
- * 空数组就是"用户把所有游戏都取消勾选了"，应当一个都不提醒（与 DSH 一致）。
+ * 条目「展示中」判定 —— 与面板/设置页同一套规则（core 的 isEntryHidden）：
+ *   hidden 里有 → 不展示；出厂默认隐藏 且 shown 里没有 → 不展示；否则展示。
+ * @param {string} id
+ * @param {{hidden?:string[], shown?:string[], defaultHiddenIds?:string[]}} s
  */
-export function filterRemindGames(games, value, fallback) {
-	// 缺键 / 坏值 ⇒ 用**出厂白名单**（core DEFAULT_SETTINGS.remindGames = 出厂可见条目）；
-	// 与 DSH 设置页的读取口径一致：读取坏掉不能表现为"全都不勾"，也不能变成"全提醒"。
-	const listed = remindGamesOf(value) || remindGamesOf(fallback);
-	if (!listed) return games || {};
+export function remindEntryShownOf(id, s) {
+	const st = s && typeof s === "object" ? s : {};
+	const hidden = Array.isArray(st.hidden) ? st.hidden : [];
+	if (hidden.includes(id)) return false;
+	const defaultHidden = Array.isArray(st.defaultHiddenIds) ? st.defaultHiddenIds : [];
+	if (!defaultHidden.includes(id)) return true;
+	const shown = Array.isArray(st.shown) ? st.shown : [];
+	return shown.includes(id);
+}
+
+/** 单条判定：展示中 ∧ 未被手动取消。 */
+export function remindGameAllowed(id, offList, shownState) {
+	if (!remindEntryShownOf(id, shownState)) return false;
+	return !remindOffGamesOf(offList).includes(id);
+}
+
+/**
+ * 按「展示中 ∧ 未取消」过滤 lastData 的 games。
+ * 注意：**不再**是白名单语义 —— 空取消列表 = 全部提醒。
+ */
+export function filterRemindGames(games, offList, shownState) {
+	const off = new Set(remindOffGamesOf(offList));
 	const out = {};
 	for (const [id, rec] of Object.entries(games || {})) {
-		if (listed.has(String(id))) out[id] = rec;
+		if (off.has(String(id))) continue;
+		if (!remindEntryShownOf(String(id), shownState)) continue;
+		out[id] = rec;
 	}
 	return out;
 }

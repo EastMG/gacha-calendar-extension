@@ -46,7 +46,7 @@ npm run verify:domains
 node build.mjs --zip
 ```
 
-> **当前内联的核心版本：`gacha-calendar-core@0.12.13`**（构建时会打印实际版本，设置页也能看到）。
+> **当前内联的核心版本：`gacha-calendar-core@0.14.0`**（构建时会打印实际版本，设置页也能看到）。
 > 注意：核心仓库的版本可能领先于 npm（未发布的修复拿不到），跟随 npm 上的最新版即可。
 
 **这一步最容易出错**：`core` 一换来源，扩展就必须同步申请权限，否则那个来源在浏览器里
@@ -63,7 +63,7 @@ src/storage.js         core 需要的 storage：chrome.storage.local 封装
 src/view-helpers.js    展示层纯函数（倒计时/角色名精简/悬停文案/行渲染模型）
 src/entry-meta.js      来源显示名口径（与 core 的 getDefaultSourceName 逐支对齐）
 src/ics.js             日历导出（RFC 5545 纯函数：转义 / 75-octet 折行 / UID / 生成）
-（设置键）remindGames  "到期提醒（送达）"的逐游戏白名单（数组；空数组 = 不提醒；缺键 ⇒ 回落 core 的 DEFAULT_SETTINGS.remindGames，即出厂可见条目）。设置页「条目」表里的「提醒」列读写它，「全部提醒」按钮写当前展示中的 id
+（设置键）remindOffGames  「到期提醒（送达）」的逐条目**取消列表**（core 0.14.0 语义：默认全选，列表只装手动取消的；非数组 ⇒ 回落 []）。生效提醒 = 条目**展示中** ∧ 不在取消列表 ——「展示」是提醒的上位条件。设置页「条目」表的「提醒」列读写它
 （设置键）refreshMode  "startup"（默认，浏览器启动后首次打开抓一轮）/ "interval"（按 refreshMinutes 间隔）
 src/proxy.js           跨域代发白名单 + proxyFetch（SW 与后台抓取共用）
 src/refresh-worker.js  后台抓取 worker（内联 core；只负责 runRefreshTick 的判定与抓取）
@@ -89,7 +89,7 @@ src/schedule/          新日程面板：一比一移植自 DSH 插件的组件�
 src/verify-boot.js     启动自检（仅 `--verify` 构建时打进 background.js，正常构建不含）
 build.mjs              构建（内联 core + 校验清单 + 打包 zip）
 verify.mjs             静态校验
-verify-live.mjs        端到端校验（真网络抓 28 款 + 渲染模型）
+verify-live.mjs        端到端校验（真网络抓 61 款 + 渲染模型）
 make-icons.mjs         生成图标
 tools/check-domains.mjs    来源域名守卫（已并入 verify.mjs，每次提交自动跑）
 tools/check-listing.mjs    商店文案与素材的硬性限制校验
@@ -290,7 +290,7 @@ npm run test:options       # 设置页行为（用极简 DOM shim 在 Node 里�
 | 静态校验（manifest 合法性、零远程代码、权限最小化、来源域名覆盖、图标、版本一致） | **通过** |
 | 设置页行为自测（渲染 / 内联自定义地址 / 删除 / 恢复 / defaultHidden 三态） | **通过** |
 | 域名守卫自测（该失败时失败、该通过时通过） | **通过** |
-| 端到端：真网络抓 **28 款**（与扩展同一份 transport 契约、同一份 core） | **通过（卡池 22/28、活动 22/28）** |
+| 端到端：真网络抓 **61 款**（与扩展同一份 transport 契约、同一份 core） | **通过（卡池 22/28、活动 22/28）** |
 | 端到端：渲染模型（与 popup 同一份纯函数）逐项断言 | **通过** |
 | 真实 Chromium：渲染构建产物（面板） | **已取证**（见 `assets/popup.png`） |
 | 真实 Chromium：加载扩展本体并实抓落库 | ⚠️ 未在本机取证，请在普通桌面环境跑 `node tools/verify-chromium.mjs` |
@@ -329,7 +329,7 @@ service worker 正常执行并创建存储目录。所以在受限环境里跑�
 在 `edge://extensions` 加载 `dist/` 后：
 
 - [ ] 工具栏出现「二游日历」图标，点击能弹出面板
-- [ ] 面板显示条目行（默认 **23 行**：28 款减去 5 款出厂默认隐藏）
+- [ ] 面板显示条目行（默认 **61 行**：61 款减去 1 款出厂默认隐藏）
 - [ ] 顶部显示「数据：联网数据 · 成功 N/28」（首次打开会自动抓一轮，约 5～15 秒）
 - [ ] 卡池列显示角色名，**悬停**能看到池名与时间
 - [ ] 起止列显示「还剩 X 天 X 小时 X 分钟」倒计时
