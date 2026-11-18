@@ -89,7 +89,6 @@
     "https://bannerhistory.app/*",
     "https://bekr66d8pd-833ej8ymdl32y5zpbknx.microcms.io/*",
     "https://bh3.mihoyo.com/*",
-    "https://cdn.wikiwiki.jp/*",
     "https://game.granbluefantasy.jp/*",
     "https://gbf-wiki.com/*",
     "https://gbf.wiki/*",
@@ -114,7 +113,9 @@
     "https://www.benghuai.com/*",
     "https://www.princessconnect.so-net.tw/*",
     "https://www.taptap.cn/*",
-    "https://yys.163.com/*"
+    "https://yys.163.com/*",
+    "https://unavatar.io/*",
+    "https://www.gamekee.com/*"
   ],
   "minimum_chrome_version": "102",
   "declarative_net_request": {
