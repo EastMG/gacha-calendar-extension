@@ -89,6 +89,8 @@ console.log(`  卡池 ${gachaOk}/${ids.length}，活动 ${eventOk}/${ids.length}
 const { buildScrapeInfo } = await import(pathToFileURL(path.join(ROOT, "src", "view-helpers.js")).href);
 const games = await engine.listGames();
 const hiddenIds = engine.__test.SOURCES.filter((s) => s.defaultHidden).map((s) => s.id);
+// 商店素材里的条目数：**从 core 动态取**，别写死（core 扩表后写死的数字会静默变旧）。
+const GAME_COUNT = engine.__test.SOURCES.length;
 const visible = games.filter((g) => !hiddenIds.includes(g.id));
 const info = buildScrapeInfo(visible.map((g) => ({ id: g.id, name: g.name })), result);
 
@@ -210,7 +212,7 @@ const popupPanelHtml = fs.readFileSync(path.join(ROOT, "src", "popup-panel.html"
 				<img src="../src/icons/icon-128.png" alt="" />
 				<h1>二游日历</h1>
 			</div>
-			<p class="tagline">28 款二次元手游的当期卡池与活动起止，一处看全。</p>
+			<p class="tagline">${GAME_COUNT} 款二次元手游的当期卡池与活动起止，一处看全。</p>
 			<ul>
 				<li>顶部近期卡片：最紧迫的那条一眼看到</li>
 				<li>每款游戏两行：卡池 / 活动，各带 14 天进度条</li>
@@ -299,7 +301,7 @@ const stage = `<!doctype html>
 				<img src="../src/icons/icon-128.png" alt="" />
 				<h1>二游日历</h1>
 			</div>
-			<p class="tagline">28 款二次元手游的当期卡池与活动起止，一处看全。</p>
+			<p class="tagline">${GAME_COUNT} 款二次元手游的当期卡池与活动起止，一处看全。</p>
 			<ul>
 				<li>当期卡池 UP 角色与剩余时间</li>
 				<li>活动起止一览，悬停看完整时间</li>
@@ -332,7 +334,7 @@ fs.writeFileSync(
 	</style></head><body>
 		<div class="box">
 			<img src="../src/icons/icon-128.png" alt="" />
-			<div><h1>二游日历</h1><p>28 款手游卡池与活动起止<br />一处看全</p></div>
+			<div><h1>二游日历</h1><p>${GAME_COUNT} 款手游卡池与活动起止<br />一处看全</p></div>
 		</div>
 	</body></html>`,
 	"utf8"
@@ -352,7 +354,7 @@ fs.writeFileSync(
 			<img src="../src/icons/icon-128.png" alt="" />
 			<div>
 				<h1>二游日历</h1>
-				<p>28 款二次元手游的当期卡池与活动起止，一处看全<br />当期 UP 角色 · 剩余时间 · 按来源自选</p>
+				<p>${GAME_COUNT} 款二次元手游的当期卡池与活动起止，一处看全<br />当期 UP 角色 · 剩余时间 · 按来源自选</p>
 			</div>
 		</div>
 	</body></html>`,
