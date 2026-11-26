@@ -91,6 +91,15 @@ const games = await engine.listGames();
 const hiddenIds = engine.__test.SOURCES.filter((s) => s.defaultHidden).map((s) => s.id);
 // 商店素材里的条目数：**从 core 动态取**，别写死（core 扩表后写死的数字会静默变旧）。
 const GAME_COUNT = engine.__test.SOURCES.length;
+// 页面构建标记：从 dist/build-info.js 取真实值，让夹具里的「页面构建 / 后台构建」显示一致
+const REAL_BUILD_ID = (() => {
+	try {
+		const s = fs.readFileSync(path.join(DIST, "build-info.js"), "utf8");
+		return (s.match(/BUILD_ID = "([^"]+)"/) || [])[1] || "fixture";
+	} catch {
+		return "fixture";
+	}
+})();
 const visible = games.filter((g) => !hiddenIds.includes(g.id));
 const info = buildScrapeInfo(visible.map((g) => ({ id: g.id, name: g.name })), result);
 
@@ -139,7 +148,11 @@ window.__MANIFEST__ = ${JSON.stringify(manifest)};
       id: "storelab",
       getManifest: () => window.__MANIFEST__,
       openOptionsPage() {},
-      sendMessage: async () => { throw new Error("offline-fixture"); }
+      // 夹具：diag 正常回显「后台构建」，模拟 SW 存活（其余消息仍抛错，页内不联网）
+      sendMessage: async (msg) => {
+        if (msg && msg.type === "diag") return { buildId: ${JSON.stringify(REAL_BUILD_ID)} };
+        throw new Error("offline-fixture");
+      }
     },
     storage: { local: {
       get: async (keys) => {

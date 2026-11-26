@@ -1,14 +1,16 @@
-[Host permissions (host_permissions), 49 entries]
+[Host permissions (host_permissions), 81 entries]
 
 The extension's function is to fetch publicly available banner/event information from each game's official announcement pages and community wikis, so it needs access to those source sites. Browsers require an extension to statically declare its target domains before making cross-origin requests, which is why these domains are listed individually in the manifest.
 
 Key points:
-1) It does NOT request <all_urls> and holds no "all sites" access. 47 of the 49 entries are specific domains; the remaining 2 both belong to GameKee: https://gamekee.com/* and https://*.gamekee.com/*.
-2) Why one subdomain wildcard: GameKee's (Blue Archive) content CDN address is not hard-coded in the page - it is returned by the API in a content_cdn field (observed to point at api-cdn.gamekee.com). That subdomain cannot be listed in advance as a concrete host, so it is authorized at the domain level. Apart from this entry there is no wildcard permission at all.
-3) These domains belong to the official announcement pages and community wikis (Bwiki, PRTS, FZ Wiki, GameKee, GameTora, and others) of games such as Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Arknights, Blue Archive, Uma Musume Pretty Derby, and Fate/Grand Order, plus a few static-asset hosts used to load game icons.
+1) It does NOT request <all_urls> and holds no "all sites" access. 80 of the 81 entries are specific domains. Only one subdomain wildcard is requested: https://*.gamekee.com/*, together with https://gamekee.com/* for the same site. Apart from that there is no wildcard permission at all.
+2) Why one subdomain wildcard: GameKee's (Blue Archive) content CDN address is not hard-coded in the page - it is returned by the API in a content_cdn field (observed to point at api-cdn.gamekee.com). That subdomain cannot be listed in advance as a concrete host, so it is authorized at the domain level.
+3) Coverage: the official announcement pages and community wikis of 61 games, including Genshin Impact, Honkai: Star Rail, Zenless Zone Zero, Honkai Impact 3rd, Guns GirlZ, Tears of Themis, Wuthering Waves, Punishing: Gray Raven, Uma Musume Pretty Derby (JP / Global / Traditional Chinese / Korean), Princess Connect! Re:Dive, Granblue Fantasy, BanG Dream!, Blue Archive (CN / Global / JP), Arknights, Arknights: Endfield, Fate/Grand Order, Azur Lane, Onmyoji, The Idolmaster series, Project SEKAI, Love and Deepspace, Infinity Nikki, Shining Nikki, Tower of Fantasy, and many more.
+   Common source sites: Bwiki, PRTS, FZ Wiki, GameKee, GameTora, wikiwiki, Game8, Bestdori, Atlas Academy, miHoYo official endpoints, and each game's official site.
 4) Among them, sekai-world.github.io / raw.githubusercontent.com are the static data sources of the Project SEKAI community wiki (hosted on GitHub Pages), and gh-proxy.com is the read-only mirror proxy provided by that community. GitHub Pages does not return CORS headers, so the extension must read the same public dataset through that mirror; both serve the same open-source dataset.
-5) Requests are used solely to read public page content; no user data is sent to these sites.
-6) The extension contains no content script, so it does not read or modify any web page the user is browsing.
+5) A few hosts are used only to load game icons (their page content is never read): is1-ssl.mzstatic.com (App Store icon CDN), storage.moegirl.org.cn, bannerhistory.app, prd-game-a-granbluefantasy.akamaized.net, and unavatar.io. The last one is a third-party avatar proxy used only for the official account avatar of Kantai Collection, whose original host (pbs.twimg.com) is unreachable on some networks; the same public avatar is read through the proxy.
+6) Requests are used solely to read public page content; no user data is sent to these sites.
+7) The extension contains no content script, so it does not read or modify any web page the user is browsing.
 
 [declarativeNetRequestWithHostAccess]
 

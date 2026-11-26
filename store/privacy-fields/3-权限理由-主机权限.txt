@@ -1,14 +1,16 @@
-【主机权限 host_permissions，共 49 条】
+【主机权限 host_permissions，共 81 条】
 
 本扩展的功能是抓取各游戏官方公告页与社区 Wiki 上的公开活动/卡池信息，因此需要访问这些来源站。浏览器要求扩展在发起跨域请求前静态声明目标域名，所以这些域名逐个列在 manifest 中。
 
 需要说明的关键点：
-1) 未申请 <all_urls>，也没有任何"所有网站"的权限。49 条里 47 条是具体域名；另有 2 条同属 GameKee：https://gamekee.com/* 与 https://*.gamekee.com/*。
-2) 为什么要 1 条子域通配：GameKee（蔚蓝档案）的内容 CDN 地址不是固定写在页面里的，而是由接口响应中的 content_cdn 字段下发（实测指向 api-cdn.gamekee.com）。该子域无法预先逐个列成具体域名，因此按域授权；除这一条外没有任何通配权限。
-3) 这些域名对应的是原神、崩坏：星穹铁道、绝区零、明日方舟、蔚蓝档案、赛马娘、Fate/Grand Order 等游戏的官方公告页与社区 Wiki（Bwiki / PRTS / FZ Wiki / GameKee / GameTora 等），另有少数用于加载游戏图标的静态资源域名；
-4) 其中 sekai-world.github.io / raw.githubusercontent.com 是「世界计划」社区 Wiki 的静态数据源（托管于 GitHub Pages），gh-proxy.com 是该社区提供的只读镜像代理 —— 因为 GitHub Pages 不返回跨域头，扩展必须经该镜像才能读到同一份公开数据；二者读的都是同一个开源数据集；
-5) 请求仅用于读取公开页面内容，不向这些站点发送任何用户数据；
-6) 本扩展不包含 content script，因此不会读取或修改用户正在浏览的任何网页内容。
+1) 未申请 <all_urls>，也没有任何"所有网站"的权限。81 条里 80 条是具体域名；只有 1 条子域通配 https://*.gamekee.com/*，另有同站的 https://gamekee.com/*。除这一条外没有任何通配权限。
+2) 为什么要这 1 条子域通配：GameKee（蔚蓝档案）的内容 CDN 地址不是固定写在页面里的，而是由接口响应中的 content_cdn 字段下发（实测指向 api-cdn.gamekee.com）。该子域无法预先逐个列成具体域名，因此按域授权。
+3) 覆盖范围：61 款游戏的官方公告页与社区 Wiki。包括原神 / 崩坏：星穹铁道 / 绝区零 / 崩坏3 / 崩坏学园2 / 未定事件簿 / 鸣潮 / 战双帕弥什 / 赛马娘（日服·国际服·繁中服·韩服）/ 公主连结Re:Dive / 碧蓝幻想 / BanG Dream! 系列 / 蔚蓝档案三服 / 明日方舟 / 明日方舟：终末地 / Fate/Grand Order / 碧蓝航线 / 阴阳师 / 偶像大师系列 / 初音未来：缤纷舞台 / 以闪亮之名 / 无限暖暖 / 闪耀暖暖 / 幻塔 / 白荆回廊 / 无期迷途 / 重返未来：1999 等。
+   常用来源站：Bwiki / PRTS / FZ Wiki / GameKee / GameTora / wikiwiki / Game8 / Bestdori / Atlas Academy / mihoyo 官方接口 / 各游戏官方站点。
+4) 其中 sekai-world.github.io / raw.githubusercontent.com 是「世界计划」社区 Wiki 的静态数据源（托管于 GitHub Pages），gh-proxy.com 是该社区提供的只读镜像代理 —— 因为 GitHub Pages 不返回跨域头，扩展必须经该镜像才能读到同一份公开数据；二者读的都是同一个开源数据集。
+5) 少数域名仅用于加载**游戏图标**（不需要读取页面内容）：is1-ssl.mzstatic.com（App Store 图标 CDN）、storage.moegirl.org.cn、bannerhistory.app、prd-game-a-granbluefantasy.akamaized.net，以及 unavatar.io —— 后者是第三方头像代理，仅用于「舰队Collection」这一款的官方账号头像（该官方头像源站 pbs.twimg.com 在部分网络不可达，故经此代理读取同一张公开头像）。
+6) 请求仅用于读取公开页面内容，不向这些站点发送任何用户数据；
+7) 本扩展不包含 content script，因此不会读取或修改用户正在浏览的任何网页内容。
 
 【声明式网络请求权限 declarativeNetRequestWithHostAccess】
 
