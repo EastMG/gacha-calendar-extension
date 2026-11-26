@@ -21,13 +21,16 @@
 | `notifications` | `2c-权限理由-notifications.txt` |
 
 > ⚠️ `3-权限理由-主机权限.txt` / `3-permission-host-EN.txt` 现在是**两段合一**：
-> 前半段解释 host_permissions（49 条，含 1 条 `*.gamekee.com` 子域通配的原因），
+> 前半段解释 host_permissions（**81 条**，含 1 条 `*.gamekee.com` 子域通配的原因），
 > 后半段解释新增的 `declarativeNetRequestWithHostAccess`（给 GameKee CDN 补 Referer）。
 > 若表单把两者合并成一个框，就整份粘；若分成两个框，按小节各粘一段。
 
-> 若权限理由栏是**按每个域名单独一个框**（49 个域名会很多），那就只在
+> 若权限理由栏是**按每个域名单独一个框**（81 个域名会很多），那就只在
 > **第一个框或"Host permissions"总框**里粘【主机权限】那一段 ——
-> 那一段本身已解释了"为什么需要这一批域名"。不必 49 个框逐个填同样的话。
+> 那一段本身已解释了"为什么需要这一批域名"。不必 81 个框逐个填同样的话。
+>
+> ⚠️ 【主机权限】段已压到 **<1000 字符**（Partner Center 该输入框上限）：中文 936 / 英文约 980。
+> 审核追问更细的分类时，再补 `3-权限理由-主机权限.txt` 末尾的详细段落。
 
 ### ③ Are you using remote code?（是否使用远程代码）
 **选「No」**，不要粘任何文字。
